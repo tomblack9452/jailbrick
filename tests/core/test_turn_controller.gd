@@ -1,53 +1,122 @@
 extends GutTest
-## The turn loop: win, lose, rise/spawn, and determinism.
+## The turn loop: level clears, rises, losing, continues, and determinism.
 
-
-## Column straight under the launcher at the start of a level.
+## Column straight under the launcher at the start of a run.
 const MID := Board.COLUMNS / 2
+const AIMS := [[0.3, 1.0], [-0.7, 0.5], [0.05, 1.0], [0.9, 0.3], [-0.2, 1.0]]
 
 
 func _controller(board: Board, balls := 1) -> TurnController:
-	return TurnController.new(board, RowGenerator.new(7), balls)
+	return TurnController.new(board, null, balls)
 
 
-func test_win_when_lock_reaches_zero() -> void:
+## A hand-built level: one brick above the line at `line_row`, one below it.
+func _one_brick_level(hp: int) -> TurnController:
 	var board := Board.new()
-	board.add_brick(Lock.new(1, MID, 5))
+	board.add_brick(Brick.new(Brick.Type.STONE, hp, MID, 6))
+	board.add_brick(Brick.new(Brick.Type.STONE, 99, 0, 15))
 	var game := _controller(board)
-	assert_eq(game.play_turn(0.0, 1.0), TurnController.Phase.WON)
-	assert_eq(game.lock_hp(), 0)
+	game.level_line_row = 10
+	return game
 
 
-func test_win_ends_volley_immediately() -> void:
-	var board := Board.new()
-	board.add_brick(Lock.new(1, MID, 5))
-	var game := _controller(board, 20)
+func test_new_run_puts_level_top_at_start_row() -> void:
+	var game := TurnController.create(1)
+	assert_eq(game.board.topmost_brick_row(), TurnController.START_ROW)
+	assert_eq(game.level_line_row, TurnController.START_ROW + TurnController.LEVEL_ROWS)
+	assert_gt(game.board.bricks_above(game.level_line_row), 0)
+	assert_eq(game.rows_cleared(), 0)
+
+
+func test_next_level_waits_below_the_floor() -> void:
+	var game := TurnController.create(1)
+	var below := 0
+	for brick in game.board.bricks:
+		if brick.row >= game.board.rows:
+			below += 1
+	assert_gt(below, 0)
+
+
+func test_clearing_every_brick_above_the_line_clears_the_level() -> void:
+	var game := _one_brick_level(1)
 	game.play_turn(0.0, 1.0)
-	assert_lt(game.turn, 2, "no rise after the lock breaks")
+	assert_eq(game.level, 2)
+	assert_eq(game.levels_cleared, 1)
+	assert_true(game.just_cleared)
+
+
+func test_level_clear_scrolls_next_level_to_start_row() -> void:
+	var game := _one_brick_level(1)
+	var next := game.board.bricks[1]
+	game.play_turn(0.0, 1.0)
+	assert_eq(next.row, 15 + TurnController.START_ROW - 10, "scrolled by start row - old line")
+	assert_eq(game.level_line_row, TurnController.START_ROW + TurnController.LEVEL_ROWS)
+
+
+func test_level_clear_replaces_the_rise() -> void:
+	var board := Board.new()
+	board.add_brick(Brick.new(Brick.Type.STONE, 1, MID, 6))
+	var game := _controller(board)
+	game.level_line_row = TurnController.START_ROW + TurnController.LEVEL_ROWS
+	var below := board.add_brick(Brick.new(Brick.Type.STONE, 99, 0, game.level_line_row))
+	game.play_turn(0.0, 1.0)
+	assert_eq(below.row, game.level_line_row - TurnController.LEVEL_ROWS, "line didn't move, so no rise")
+
+
+func test_rise_when_level_not_cleared() -> void:
+	var game := _one_brick_level(50)
+	var brick := game.board.bricks[0]
+	game.play_turn(0.6, 1.0)
+	assert_eq(game.level, 1)
+	assert_eq(brick.row, 5)
+	assert_eq(game.level_line_row, 9, "the line rises with the bricks")
+	assert_eq(game.turn, 2)
+
+
+func test_level_clear_awards_bonus_points() -> void:
+	var game := _one_brick_level(1)
+	game.play_turn(0.0, 1.0)
+	assert_eq(game.points, 1 + Economy.level_bonus(1))
+
+
+func test_points_count_damage() -> void:
+	var game := _one_brick_level(50)
+	game.ball_count = 3
+	game.play_turn(0.0, 1.0)
+	assert_eq(game.points, 50 - game.board.bricks[0].hp)
+
+
+func test_rows_cleared_counts_from_level_top() -> void:
+	var board := Board.new()
+	board.add_brick(Brick.new(Brick.Type.STONE, 5, 2, 14))
+	var game := _controller(board)
+	game.level_line_row = 20
+	assert_eq(game.rows_cleared(), 4)
 
 
 func test_lose_when_brick_reaches_danger_line() -> void:
 	var board := Board.new()
 	board.add_brick(Brick.new(Brick.Type.STONE, 999, 0, 1))
-	board.add_brick(Lock.new(50, MID, 8))
 	var game := _controller(board)
+	game.level_line_row = 12
 	assert_eq(game.rows_until_trapped(), 1)
 	assert_eq(game.play_turn(0.0, 1.0), TurnController.Phase.LOST)
 
 
-func test_rise_step_moves_bricks_and_spawns_bottom_row() -> void:
+func test_continue_once_clears_top_rows() -> void:
 	var board := Board.new()
-	var brick := board.add_brick(Brick.new(Brick.Type.STONE, 999, 0, 6))
-	board.add_brick(Lock.new(50, 5, 9))
+	for row in [1, 2, 3, 6]:
+		board.add_brick(Brick.new(Brick.Type.STONE, 999, 0, row))
 	var game := _controller(board)
-	assert_eq(game.play_turn(0.6, 1.0), TurnController.Phase.AIM)
-	assert_eq(brick.row, 5)
-	assert_eq(game.turn, 2)
-	var bottom := 0
-	for b in board.bricks:
-		if b.row == board.rows - 1:
-			bottom += 1
-	assert_between(bottom, 1, board.columns - 1, "new row with at least one gap")
+	game.level_line_row = 12
+	game.play_turn(0.0, 1.0)
+	assert_eq(game.phase, TurnController.Phase.LOST)
+	assert_true(game.continue_run())
+	assert_eq(game.phase, TurnController.Phase.AIM)
+	assert_eq(board.topmost_brick_row(), 5)
+	game.board.add_brick(Brick.new(Brick.Type.STONE, 999, 1, 1))
+	game.play_turn(0.0, 1.0)
+	assert_false(game.continue_run(), "only one continue per run")
 
 
 func test_first_ball_back_sets_next_launch() -> void:
@@ -78,7 +147,7 @@ func test_shallow_aim_is_clamped() -> void:
 
 
 func test_recall_ends_turn_and_keeps_balls() -> void:
-	var game := TestLevel.create()
+	var game := TurnController.create(1)
 	var balls := game.ball_count
 	game.fire(0.2, 1.0)
 	for i in 10:
@@ -89,6 +158,14 @@ func test_recall_ends_turn_and_keeps_balls() -> void:
 	assert_eq(game.turn, 2)
 
 
+func test_starting_deeper_uses_that_levels_bricks_and_balls() -> void:
+	var shallow := TurnController.create(1, 1)
+	var deep := TurnController.create(1, 5)
+	assert_eq(deep.level, 5)
+	assert_eq(deep.ball_count, Economy.start_balls(5))
+	assert_gt(deep.board.bricks[0].hp, shallow.board.bricks[0].hp)
+
+
 func _play(game: TurnController, aims: Array) -> PackedStringArray:
 	var states := PackedStringArray()
 	for aim in aims:
@@ -97,31 +174,18 @@ func _play(game: TurnController, aims: Array) -> PackedStringArray:
 	return states
 
 
-const AIMS := [[0.3, 1.0], [-0.7, 0.5], [0.05, 1.0], [0.9, 0.3], [-0.2, 1.0]]
-
-
 func test_determinism_same_seed_same_aim_same_result() -> void:
-	var a := _play(TestLevel.create(), AIMS)
-	var b := _play(TestLevel.create(), AIMS)
+	var a := _play(TurnController.create(1998), AIMS)
+	var b := _play(TurnController.create(1998), AIMS)
 	assert_eq(a, b)
 
 
-func test_different_seed_spawns_different_rows() -> void:
-	var a := _play(TestLevel.create(1), AIMS)
-	var b := _play(TestLevel.create(2), AIMS)
-	assert_ne(a[-1], b[-1])
+func test_different_seed_builds_different_levels() -> void:
+	assert_ne(TurnController.create(1).snapshot(), TurnController.create(2).snapshot())
 
 
 func test_clone_plays_out_identically() -> void:
-	var game := TestLevel.create()
+	var game := TurnController.create(1998)
 	game.play_turn(0.4, 1.0)
 	var copy := game.clone()
 	assert_eq(_play(game, AIMS), _play(copy, AIMS))
-
-
-func test_test_level_has_buried_lock() -> void:
-	var game := TestLevel.create()
-	var lock := game.board.lock
-	assert_not_null(lock)
-	assert_gt(lock.row, game.board.topmost_brick_row(), "lock is below the top of the pile")
-	assert_eq(game.phase, TurnController.Phase.AIM)

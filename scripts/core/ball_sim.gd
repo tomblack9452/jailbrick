@@ -44,7 +44,7 @@ var returned := 0
 var first_return_x := 0.0
 var balls_gained := 0
 var hits := 0
-var lock_broken := false
+var damage_dealt := 0
 
 
 func _init(p_board: Board, p_launch_x: float, p_dx: float, p_dy: float, p_count: int, p_damage := 1) -> void:
@@ -79,7 +79,7 @@ func active_count() -> int:
 
 
 func is_finished() -> bool:
-	return lock_broken or (to_launch == 0 and active_count() == 0)
+	return to_launch == 0 and active_count() == 0
 
 
 func can_recall() -> bool:
@@ -105,10 +105,8 @@ func step() -> void:
 			continue
 		for i in SUBSTEPS:
 			_move(ball, false)
-			if not ball.active or lock_broken:
+			if not ball.active:
 				break
-		if lock_broken:
-			break
 	tick += 1
 	if tick >= MAX_TICKS:
 		recall()
@@ -179,9 +177,7 @@ func _move(ball: Ball, ghost: bool) -> bool:
 			if not ghost:
 				for brick in touched:
 					hits += 1
-					board.damage_brick(brick, damage)
-					if brick.is_lock() and brick.is_destroyed():
-						lock_broken = true
+					damage_dealt += board.damage_brick(brick, damage)
 
 	if not ghost:
 		_collect_pickups(ball)

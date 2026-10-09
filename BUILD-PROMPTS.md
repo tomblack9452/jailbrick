@@ -24,13 +24,18 @@ kept separate so Claude Code loads it every session.
 
 ## Section B — Game design
 
+> **2026-10-09 design change: depth levels replace locks.** A run is an endless
+> dig in 10-row levels (B2), and coins buy a start at any level you've reached
+> (B8). Locks are dropped for now. Anything below marked *(parked)* was written
+> for the lock design and needs a rethink before it's built.
+
 ### B1. Fantasy and framing
 
-You're an inmate of somewhere that doesn't appear on maps. You get out one locked
-door at a time. Each level is a single locked barrier (cell door, drain grate,
-padlocked fence, the strange humming hatch) packed in with numbered bricks. Break
-the lock and you squeeze through to the next one. If the walls close in first,
-you're dragged back.
+You're an inmate of somewhere that doesn't appear on maps, and you're tunnelling
+out. Below your cell is a wall of numbered bricks that never ends. Every 10 rows
+you dig through takes you somewhere new: the drains, the woods, the scrapyard,
+somewhere stranger. If the walls close in, you're dragged back, but you remember
+the way and can bribe your way back down.
 
 ### B2. Board and turn loop
 
@@ -50,17 +55,21 @@ you're dragged back.
      multiplier) from the brick's number.
   3. **Return.** Balls return when they leave through the top line. The first
      ball back sets the next launch position.
-  4. **Rise.** Every brick moves up one row and a new row spawns at the bottom.
+  4. **Clear or rise.** If every brick above the current level's bottom line is
+     gone, the level is cleared: bonus points, and the board scrolls so the next
+     level's top row sits back at the start row. Otherwise every brick moves up one
+     row, revealing more of the dig from below.
   5. **Check.** If any brick reaches the **danger line** (the row just below the
-     launcher), you lose, though you can continue (see B8).
-- **Win:** reduce the **lock** to 0 HP. The lock is a 1×1 or 2×1 brick with large
-  HP, a distinct model, and often shielded (B4).
-- **The lock rises too.** It counts as a brick for the danger line, so its starting
-  row is the level's hard turn limit: the walls drag the door up to you.
-- **Turn counter:** the HUD always shows "rows until trapped" so the pressure is readable.
+     launcher), the run ends, though you can continue once (see B8).
+- **Levels:** the dig is generated in blocks of 10 rows, one level each, with HP
+  climbing with depth. A gauge down the left side numbers each level's bottom line,
+  and the HUD shows rows cleared out of 10.
+- **Points and coins:** 1 point per HP of damage, plus a bonus per level cleared.
+  Coins = points / 20 + 10 per level cleared, banked when the run ends.
+- **Turn counter:** the HUD always shows "trapped in N" so the pressure is readable.
 - **Fast-forward:** hold to speed up the volley (×2, ×4). Add a recall button after 3 seconds.
 
-### B3. Level types (6)
+### B3. Level types (6) *(parked: written for locks)*
 
 | Type | Twist | Example |
 |---|---|---|
@@ -80,16 +89,16 @@ you're dragged back.
 | **Crate** | Drops a pickup when broken |
 | **Gas can** | Explodes for damage on the 8 neighbours |
 | **Rat nest** | Every 2 turns, spawns a 1 HP stone brick in an empty adjacent cell |
-| **Chain** | Linked to the lock. The lock is invulnerable while any chain stands |
+| **Chain** *(parked)* | Linked to the lock. The lock is invulnerable while any chain stands |
 | **Sludge** | Slows balls that pass near it. Doesn't block |
-| **Shield** | Sits next to the lock and absorbs the first hit of each volley |
-| **Guard** (boss) | Moves 1 column per turn. Carries or protects the lock |
+| **Shield** *(parked)* | Sits next to the lock and absorbs the first hit of each volley |
+| **Guard** (boss) *(parked)* | Moves 1 column per turn. Carries or protects the lock |
 
 ### B5. Pickups (collected by touching them with a ball)
 
 Pickups that rise into the danger row are collected automatically.
 
-- **+1 Ball** (permanent for this level)
+- **+1 Ball** (permanent for this run)
 - **Coin** (currency)
 - **Splitter:** the next ball to pass through splits into 3
 - **Laser bar:** a one-shot horizontal or vertical beam that deals 1 damage per brick in its line
@@ -114,7 +123,7 @@ purchases, keeps pace with the difficulty curve. The solver bot in Phase 2/6 che
 
 Charms are build modifiers that change how you play, not just numbers.
 
-- **Lockpick:** +50% damage to locks and chains
+- **Lockpick** *(parked)*: +50% damage to locks and chains
 - **Rat Tail:** balls bounce off the top line once before returning
 - **Rusty Spring:** the first ball of each volley is ×2 size
 - **Ghost Ball:** 1 ball per volley passes through Iron bricks
@@ -125,13 +134,16 @@ Charms are build modifiers that change how you play, not just numbers.
 
 Charms drop from bosses, from Puzzle cells, and as one-time rewards for world milestones.
 
-### B8. Fail state and continues
+### B8. Fail state, continues and restarting deeper
 
-- On a loss: **continue once** by watching a rewarded ad (this clears the bottom 3
-  rows), or retry for free. There is never a forced ad.
-- Retrying is always free and instant. There are no lives or energy.
+- On a loss: **continue once** per run by watching a rewarded ad (this clears the
+  top 3 rows of the pile). There is never a forced ad.
+- **Start from any level you've reached.** Level 1 is always free and instant.
+  Deeper starts cost coins: 25 × (L − 1) × (L + 2), so level 2 is 100 and level 5
+  is 700. You start with 5 balls plus 3 per level skipped.
+- Coins and your best level are saved between runs. There are no lives or energy.
 
-### B9. Worlds (5)
+### B9. Worlds (5) *(parked: worlds become depth bands, numbers to redo)*
 
 Each world maps to one PSX asset pack. Add the asset links in `assets/README.md`
 when they're imported.
@@ -150,11 +162,12 @@ when they're imported.
 
 ### B10. Monetisation (ethical, final)
 
-- **Rewarded ads only.** Watch an ad, if you choose to, for: continue once, double
-  coins at level end, or the daily free crate.
+- **Rewarded ads only.** Watch an ad, if you choose to, for: continue once per
+  run, double coins at run end, or the daily free crate.
 - **Supporter Pack (one-time, ~£3.99):** grants every rewarded-ad reward
-  automatically without the ad, an exclusive cosmetic ball and launcher skin, and
-  a thank-you in the credits. It adds **no** extra power beyond what ads already give.
+  automatically without the ad (including double coins), an exclusive cosmetic ball
+  and launcher skin, and a thank-you in the credits. It adds **no** extra power
+  beyond what ads already give, and coins are never sold on their own.
 - **Never:** interstitials, banners, energy, loot boxes, paid boosters, or currency packs.
 
 ---
@@ -162,6 +175,10 @@ when they're imported.
 ## Section C — Phase prompts
 
 Paste one prompt per new session. Each assumes `CLAUDE.md` has been loaded.
+
+> Prompts for Phases 2–9 were written before the depth-level change (see the note
+> at the top of Section B). Revise each one before running it: drop the lock, and
+> swap "levels" for generated depth levels plus the restart-at-level economy.
 
 ### Phase 0 — Project setup
 
@@ -333,7 +350,7 @@ what Claude builds, not typing code.
 | Phase | Est. hours | Status | Notes |
 |---|---|---|---|
 | 0 — Setup | 1–2 | ☑ | Godot 4.7.2, GUT 9.7.1. Windows binary used locally instead of Linux headless |
-| 1 — Proof of concept | 6–10 | ◐ | Built. Needs a 5-minute play-test to call it fun. Test level tuned with a throwaway greedy bot |
+| 1 — Proof of concept | 6–10 | ◐ | Greybox play-tested and liked. Now reworked into depth levels; needs another play-test |
 | 2 — Levels + solver | 6–10 | ☐ | |
 | 3 — Full content | 12–18 | ☐ | The biggest phase. Split it by world |
 | 4 — Progression | 6–8 | ☐ | |

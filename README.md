@@ -6,7 +6,7 @@ Break the lock before the walls close in.
 - [`CLAUDE.md`](./CLAUDE.md): project context (pitch, pillars, tech, art recipe)
 - [`BUILD-PROMPTS.md`](./BUILD-PROMPTS.md): full game design and the phase-by-phase build prompts
 
-**Status:** Phase 1 (greybox proof of concept) built and waiting for a play-test. Next step is Phase 2 (levels, generator and solver bot).
+**Status:** Phase 1 greybox reworked into depth levels (10-row levels, coins, restart at any level reached). Waiting for a play-test.
 
 ## Getting started
 
@@ -33,7 +33,8 @@ at 1080×1920 portrait and stretches to fit.
 
 **Controls (Phase 1 greybox):** hold the left mouse button below the hatch to aim,
 release to fire. Right-click cancels the aim. Hold **Space** (or the `>>` button)
-to fast-forward, **Q** recalls the volley after 3 seconds, and **R** restarts.
+to fast-forward, **Q** recalls the volley after 3 seconds, and **R** restarts from
+level 1. Coins and your best level save to `user://progress.json`; delete it to reset.
 
 ### Run tests headless
 

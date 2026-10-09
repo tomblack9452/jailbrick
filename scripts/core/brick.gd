@@ -3,7 +3,7 @@ extends RefCounted
 ## One brick on the board. Occupies `width` cells to the right of (col, row).
 ## Pure data: no nodes, so the core can run headless.
 
-enum Type { STONE, LOCK }
+enum Type { STONE }
 
 var id := 0
 var type := Type.STONE
@@ -23,10 +23,6 @@ func _init(p_type := Type.STONE, p_hp := 1, p_col := 0, p_row := 0, p_width := 1
 	width = p_width
 
 
-func is_lock() -> bool:
-	return type == Type.LOCK
-
-
 func is_destroyed() -> bool:
 	return hp <= 0
 
@@ -39,12 +35,7 @@ func take_hit(amount: int) -> int:
 
 
 func clone() -> Brick:
-	var copy: Brick = get_script().new()
+	var copy := Brick.new(type, hp, col, row, width)
 	copy.id = id
-	copy.type = type
-	copy.hp = hp
 	copy.max_hp = max_hp
-	copy.col = col
-	copy.row = row
-	copy.width = width
 	return copy

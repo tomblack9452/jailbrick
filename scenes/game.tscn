@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/view/game_view.gd" id="1_game"]
 [ext_resource type="Script" path="res://scripts/view/hud.gd" id="2_hud"]
@@ -6,6 +6,13 @@
 [sub_resource type="Environment" id="Environment_drains"]
 background_mode = 1
 background_color = Color(0.055, 0.065, 0.06, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_progress_fill"]
+bg_color = Color(0.36, 0.79, 0.65, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [node name="Game" type="Node3D"]
 script = ExtResource("1_game")
@@ -16,7 +23,7 @@ environment = SubResource("Environment_drains")
 [node name="Camera3D" type="Camera3D" parent="."]
 keep_aspect = 0
 projection = 1
-size = 15.6
+size = 16.7
 far = 100.0
 
 [node name="Board" type="Node3D" parent="."]
@@ -28,50 +35,79 @@ script = ExtResource("2_hud")
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 40.0
-offset_top = 36.0
+offset_top = 32.0
 offset_right = -40.0
-offset_bottom = 116.0
+offset_bottom = 200.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 24
 
-[node name="Trapped" type="Label" parent="HUD/TopBar"]
+[node name="Run" type="VBoxContainer" parent="HUD/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 4
-theme_override_constants/shadow_offset_y = 4
-theme_override_font_sizes/font_size = 52
-text = "TRAPPED IN 5"
+mouse_filter = 2
+theme_override_constants/separation = 8
 
-[node name="Lock" type="Label" parent="HUD/TopBar"]
+[node name="Level" type="Label" parent="HUD/TopBar/Run"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.7, 0.82, 0.92, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 4
 theme_override_constants/shadow_offset_y = 4
-theme_override_font_sizes/font_size = 52
-text = "LOCK 100"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 56
+text = "Level 1"
 
-[node name="Turn" type="Label" parent="HUD/TopBar"]
+[node name="Progress" type="ProgressBar" parent="HUD/TopBar/Run"]
+custom_minimum_size = Vector2(320, 18)
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_filter = 2
+theme_override_styles/fill = SubResource("StyleBox_progress_fill")
+max_value = 10.0
+step = 1.0
+show_percentage = false
+
+[node name="Rows" type="Label" parent="HUD/TopBar/Run"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.64, 0.62, 1)
+theme_override_font_sizes/font_size = 30
+text = "0 of 10 rows cleared"
+
+[node name="Bank" type="VBoxContainer" parent="HUD/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Coins" type="Label" parent="HUD/TopBar/Bank"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.67, 0.25, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 4
 theme_override_constants/shadow_offset_y = 4
-theme_override_font_sizes/font_size = 52
-text = "TURN 1"
+theme_override_font_sizes/font_size = 48
+text = "0 coins"
+horizontal_alignment = 2
+
+[node name="Best" type="Label" parent="HUD/TopBar/Bank"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.64, 0.62, 1)
+theme_override_font_sizes/font_size = 30
+text = "Best: level 1"
+horizontal_alignment = 2
+
+[node name="Trapped" type="Label" parent="HUD/TopBar/Bank"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Trapped in 9"
 horizontal_alignment = 2
 
 [node name="Controls" type="HBoxContainer" parent="HUD"]
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 40.0
-offset_top = 128.0
+offset_top = 212.0
 offset_right = -40.0
-offset_bottom = 224.0
+offset_bottom = 300.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 24
@@ -80,27 +116,45 @@ alignment = 2
 [node name="Hint" type="Label" parent="HUD/Controls"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.65, 0.68, 0.66, 1)
-theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(0.6, 0.64, 0.62, 1)
+theme_override_font_sizes/font_size = 28
 text = "Drag below the hatch to aim, release to fire.
-Space: fast-forward  Q: recall  R: restart"
+Space: fast-forward  Q: recall"
 vertical_alignment = 1
 
 [node name="Recall" type="Button" parent="HUD/Controls"]
-custom_minimum_size = Vector2(220, 90)
+custom_minimum_size = Vector2(220, 84)
 layout_mode = 2
 size_flags_horizontal = 10
 focus_mode = 0
-theme_override_font_sizes/font_size = 40
-text = "RECALL"
+theme_override_font_sizes/font_size = 38
+text = "Recall"
 
 [node name="FastForward" type="Button" parent="HUD/Controls"]
-custom_minimum_size = Vector2(220, 90)
+custom_minimum_size = Vector2(220, 84)
 layout_mode = 2
 size_flags_horizontal = 8
 focus_mode = 0
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 38
 text = ">>"
+
+[node name="Banner" type="Label" parent="HUD"]
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -120.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.36, 0.79, 0.65, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 6
+theme_override_constants/shadow_offset_y = 6
+theme_override_font_sizes/font_size = 120
+text = "Level 2"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Result" type="ColorRect" parent="HUD"]
 anchors_preset = 15
@@ -108,43 +162,71 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.72)
+color = Color(0.03, 0.035, 0.035, 0.96)
 
 [node name="Box" type="VBoxContainer" parent="HUD/Result"]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -440.0
-offset_top = -260.0
-offset_right = 440.0
-offset_bottom = 260.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = 140.0
+offset_right = -60.0
+offset_bottom = -100.0
 grow_horizontal = 2
 grow_vertical = 2
-alignment = 1
-theme_override_constants/separation = 40
+theme_override_constants/separation = 28
 
 [node name="Title" type="Label" parent="HUD/Result/Box"]
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.42, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 6
-theme_override_constants/shadow_offset_y = 6
-theme_override_font_sizes/font_size = 110
-text = "ESCAPED!"
+theme_override_constants/shadow_offset_x = 5
+theme_override_constants/shadow_offset_y = 5
+theme_override_font_sizes/font_size = 80
+text = "Trapped at level 1"
 horizontal_alignment = 1
 
 [node name="Detail" type="Label" parent="HUD/Result/Box"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 44
-text = "Lock broken on turn 8."
+theme_override_colors/font_color = Color(0.6, 0.64, 0.62, 1)
+theme_override_font_sizes/font_size = 36
+text = "0 points this run, +0 coins"
 horizontal_alignment = 1
-autowrap_mode = 3
 
-[node name="Retry" type="Button" parent="HUD/Result/Box"]
-custom_minimum_size = Vector2(380, 110)
+[node name="Coins" type="Label" parent="HUD/Result/Box"]
 layout_mode = 2
-size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.94, 0.67, 0.25, 1)
 theme_override_font_sizes/font_size = 52
-text = "RETRY"
+text = "0 coins"
+horizontal_alignment = 1
+
+[node name="StartFrom" type="Label" parent="HUD/Result/Box"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.64, 0.62, 1)
+theme_override_font_sizes/font_size = 34
+text = "Start from"
+
+[node name="Scroll" type="ScrollContainer" parent="HUD/Result/Box"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Levels" type="GridContainer" parent="HUD/Result/Box/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 20
+columns = 3
+
+[node name="Continue" type="Button" parent="HUD/Result/Box"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "Watch ad: continue at level 1"
+
+[node name="Restart" type="Button" parent="HUD/Result/Box"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "Restart from level 1 for free"

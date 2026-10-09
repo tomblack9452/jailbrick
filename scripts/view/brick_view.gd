@@ -9,8 +9,6 @@ const SLIDE_RATE := 14.0
 const LOW_HP_COLOR := Color(0.95, 0.78, 0.3)
 const MID_HP_COLOR := Color(0.86, 0.33, 0.24)
 const HIGH_HP_COLOR := Color(0.52, 0.24, 0.66)
-const LOCK_COLOR := Color(0.42, 0.52, 0.6)
-const LOCK_RIM_COLOR := Color(0.95, 0.78, 0.3)
 ## HP at which a brick reaches HIGH_HP_COLOR (log scale between).
 const HIGH_HP := 40.0
 ## Label size in world units per font pixel, for 1-2 digit and 3+ digit HP.
@@ -22,28 +20,18 @@ var target := Vector3.ZERO
 var _fill := _unshaded()
 var _rim := _unshaded()
 var _label := _make_label(64)
-var _caption: Label3D = null
 var _base_color := Color.WHITE
 var _rim_color := Color.WHITE
 var _hp := -1
-var _is_lock := false
 var _flash := 0.0
 var _dying := false
 
 
 func setup(brick: Brick, start_position: Vector3) -> void:
-	_is_lock = brick.is_lock()
 	var width := brick.width - (1.0 - SIZE)
 	_add_quad(Vector2(width, SIZE), 0.0, _rim)
 	_add_quad(Vector2(width - RIM * 2.0, SIZE - RIM * 2.0), 0.01, _fill)
 	add_child(_label)
-	if _is_lock:
-		_caption = _make_label(48)
-		_caption.text = "LOCK"
-		_caption.pixel_size = LABEL_SCALE_SMALL
-		_caption.position.y = 0.24
-		_label.position.y = -0.1
-		add_child(_caption)
 	position = start_position
 	set_hp(brick.hp)
 
@@ -55,9 +43,9 @@ func set_hp(hp: int) -> void:
 		_flash = 1.0
 	_hp = hp
 	_label.text = str(hp)
-	_label.pixel_size = LABEL_SCALE if hp < 100 or _is_lock else LABEL_SCALE_SMALL
+	_label.pixel_size = LABEL_SCALE if hp < 100 else LABEL_SCALE_SMALL
 	_base_color = _color_for(hp)
-	_rim_color = LOCK_RIM_COLOR if _is_lock else _base_color.darkened(0.35)
+	_rim_color = _base_color.darkened(0.35)
 
 
 ## Plays a quick shrink and frees the node.
@@ -78,8 +66,6 @@ func _process(delta: float) -> void:
 
 
 func _color_for(hp: int) -> Color:
-	if _is_lock:
-		return LOCK_COLOR
 	var t := clampf(log(float(maxi(hp, 1))) / log(HIGH_HP), 0.0, 1.0)
 	if t < 0.5:
 		return LOW_HP_COLOR.lerp(MID_HP_COLOR, t * 2.0)

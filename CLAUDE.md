@@ -6,20 +6,23 @@
 ## Pitch
 
 **Jailbrick** is a turn-based brick-breaker escape game with a low-poly PSX look.
-You're a prisoner breaking out. Each level has a **lock** (a cell door, grate or
-gate) buried in a wall of numbered bricks. Aim, fire a volley of balls, and break
-the lock before the rising brick rows box you in. Escape through the sewers, woods,
-scrapyard and somewhere stranger, collect charms and upgrades as you go, and never
-get forced to watch an ad.
+You're a prisoner tunnelling out through an endless wall of numbered bricks. Aim,
+fire a volley of balls, and dig: every 10 rows you clear is a level, and the next
+10 scroll up to take their place. The rows keep rising, so sooner or later you get
+boxed in. Then you spend the coins you earned to start a new run from any level
+you've reached, and see how far you can get. Dig through the sewers, woods,
+scrapyard and somewhere stranger, and never get forced to watch an ad.
 
 ## Design pillars
 
-1. **Escape, not endurance.** Every level has a clear exit: break the lock. Levels
-   end with a win or a loss, never an endless grind.
+1. **How deep can you go.** A run is an endless dig, split into 10-row levels so
+   progress is always visible. Every level reached becomes a place you can start
+   from next time, so runs feel like progress, not a grind.
 2. **Readable tension.** You can always see how many turns are left before the walls
    reach you. Losses should feel fair, so you think "one more go".
 3. **Earned power.** Everything that makes you stronger can be earned by playing.
-   Nothing is pay-to-win, and every level must be beatable without spending.
+   Coins come only from playing and rewarded ads. They're never sold, so starting
+   deeper is earned, not bought.
 4. **Respect the player.** Ads only play when the player chooses them (rewarded),
    there are no interstitials, no energy timers, and no loot boxes. There is one
    optional Supporter Pack.

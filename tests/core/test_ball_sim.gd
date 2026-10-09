@@ -73,17 +73,27 @@ func test_seam_between_two_bricks_bounces_once() -> void:
 	assert_eq(left.hp + right.hp, 8, "both bricks hit once")
 
 
-func test_wide_lock_is_hit_once_per_bounce() -> void:
+func test_wide_brick_is_hit_once_per_bounce() -> void:
 	var board := Board.new()
-	var lock := board.add_brick(Lock.new(10, 2, 6, 2))
+	var wide := board.add_brick(Brick.new(Brick.Type.STONE, 10, 2, 6, 2))
 	var sim := _sim(board)
 	var ball := sim.add_ball(3.0, 5.0, 0.0, 1.0)
 	_step_until(sim, func(): return ball.dy < 0.0)
-	assert_eq(lock.hp, 9)
+	assert_eq(wide.hp, 9)
+	assert_eq(sim.damage_dealt, 1)
+
+
+func test_bricks_below_the_floor_are_out_of_reach() -> void:
+	var board := Board.new()
+	var hidden := board.add_brick(Brick.new(Brick.Type.STONE, 5, 3, board.rows))
+	var sim := _sim(board)
+	var ball := sim.add_ball(3.5, board.rows - 1.0, 0.0, 1.0)
+	_step_until(sim, func(): return ball.dy < 0.0)
+	assert_eq(hidden.hp, 5)
 
 
 func test_speed_stays_constant_after_many_bounces() -> void:
-	var board := TestLevel.create().board
+	var board := TurnController.create(1).board
 	var sim := BallSim.new(board, 3.5, 0.31, 0.9, 1)
 	for i in 400:
 		sim.step()
@@ -125,7 +135,7 @@ func test_ball_collects_pickup() -> void:
 
 
 func test_recall_stops_volley() -> void:
-	var sim := BallSim.new(TestLevel.create().board, 3.5, 0.2, 1.0, 10)
+	var sim := BallSim.new(TurnController.create(1).board, 3.5, 0.2, 1.0, 10)
 	for i in 30:
 		sim.step()
 	sim.recall()

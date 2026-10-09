@@ -1,13 +1,17 @@
 extends Node3D
-## Phase 1 greybox view. Draws a TurnController in 3D, turns mouse/touch drags
-## into aim + fire, and steps the volley at the sim's fixed tick rate.
+## Greybox view of a run. Draws a TurnController, turns mouse/touch drags into
+## aim + fire, steps the volley at the sim's fixed tick rate, and handles the
+## run flow: banking coins, continues and restarting at a level.
 ##
 ## Board space (x right, y down, one unit per cell) maps to world space as
 ## (x - columns / 2, -y, 0), so the launcher line sits at world y = 0.
 
 ## Space above the launcher line for the HUD, in UI pixels (1080-wide layout).
-const TOP_MARGIN_PX := 300.0
-const SIDE_MARGIN := 0.3
+const TOP_MARGIN_PX := 330.0
+## Board units left of the board for the level gauge, and right of it.
+const LEFT_MARGIN := 1.4
+const RIGHT_MARGIN := 0.3
+const GAUGE_COLOR := Color(0.36, 0.79, 0.65)
 const MAX_TICKS_PER_FRAME := 64
 const AIM_DOT_SPACING := 0.45
 const AIM_DOT_COUNT := 120
@@ -18,9 +22,11 @@ const AUTO_FAST_AFTER := 5.0
 const DANGER_COLOR := Color(0.9, 0.15, 0.12)
 
 var game: TurnController
+var progress: Progress
 
 var _brick_views := {} # brick id -> BrickView
 var _pickup_views := {} # pickup id -> PickupView
+var _level_markers := {} # level -> Node3D (its bottom line on the gauge)
 var _balls: Array[MeshInstance3D] = []
 var _aim_dots: Array[MeshInstance3D] = []
 var _ghost_ball: MeshInstance3D
@@ -36,6 +42,9 @@ var _tick_debt := 0.0
 var _fast_forward_time := 0.0
 var _speed := 1
 var _result_shown := false
+var _banked := 0
+var _shown_level := 1
+var _last_line_row := 0
 
 @onready var _camera: Camera3D = $Camera3D
 @onready var _board_root: Node3D = $Board
@@ -45,27 +54,48 @@ var _result_shown := false
 func _ready() -> void:
 	_ball_mesh.radius = BallSim.RADIUS
 	_ball_mesh.height = BallSim.RADIUS * 2.0
-	_hud.retry_pressed.connect(start_game)
+	progress = Progress.load_from()
 	_hud.recall_pressed.connect(func() -> void: game.recall())
+	_hud.continue_pressed.connect(_continue_run)
+	_hud.start_pressed.connect(_start_from)
 	get_viewport().size_changed.connect(_frame_camera)
-	start_game()
+	start_run(1)
 
 
-func start_game() -> void:
+func start_run(level: int) -> void:
 	for child in _board_root.get_children():
 		child.queue_free()
 	_brick_views.clear()
 	_pickup_views.clear()
+	_level_markers.clear()
 	_balls.clear()
 	_aim_dots.clear()
 	_aiming = false
 	_result_shown = false
-	_hud.hide_result()
+	_banked = 0
+	_hud.hide_trapped()
 
-	game = TestLevel.create()
+	game = TurnController.create(randi(), level)
+	_shown_level = game.level
+	_last_line_row = game.level_line_row
 	_build_room()
 	_frame_camera()
 	_sync(true)
+
+
+## Pays for a start at `level` (level 1 is free) and begins the run.
+func _start_from(level: int) -> void:
+	if not progress.pay_for_start(level):
+		return
+	progress.save()
+	start_run(level)
+
+
+## Stub: Phase 8 puts a rewarded ad in front of this.
+func _continue_run() -> void:
+	if game.continue_run():
+		_result_shown = false
+		_hud.hide_trapped()
 
 
 func _process(delta: float) -> void:
@@ -87,13 +117,20 @@ func _process(delta: float) -> void:
 
 	_sync(false)
 	var can_recall := game.volley != null and game.volley.can_recall()
-	_hud.refresh(game, can_recall, _speed)
+	var best := maxi(progress.best_level, game.level)
+	_hud.refresh(game, progress.coins + game.coins_earned() - _banked, best, can_recall, _speed)
 
-	var ended := game.phase == TurnController.Phase.WON or game.phase == TurnController.Phase.LOST
-	if ended and not _result_shown:
+	if game.level > _shown_level:
+		_shown_level = game.level
+		_hud.show_banner("Level %d" % game.level)
+
+	if game.phase == TurnController.Phase.LOST and not _result_shown:
 		_result_shown = true
 		_hide_aim()
-		_hud.show_result(game)
+		progress.bank(game.coins_earned() - _banked, game.level)
+		_banked = game.coins_earned()
+		progress.save()
+		_hud.show_trapped(game, progress.coins, progress.best_level)
 
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 150.0) if game.rows_until_trapped() <= 2 else 0.0
 	_danger_material.albedo_color = DANGER_COLOR.lerp(Color(1.0, 0.75, 0.6), pulse)
@@ -102,7 +139,7 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R:
-			start_game()
+			start_run(1)
 		elif event.keycode == KEY_Q and game.volley != null and game.volley.can_recall():
 			game.recall()
 
@@ -187,39 +224,56 @@ func _hide_aim() -> void:
 
 func _sync(instant: bool) -> void:
 	var board := game.board
+	# Rows the board scrolled since last frame (-1 for a rise, more on a level
+	# clear). Things coming into view start where they were and slide with the rest.
+	var scrolled := 0 if instant else game.level_line_row - _last_line_row
+	_last_line_row = game.level_line_row
+	var from := Vector3(0.0, scrolled, 0.0)
+
 	var alive := {}
+	var below := {}
 	for brick in board.bricks:
+		if brick.row >= board.rows:
+			below[brick.id] = true
+			continue
 		alive[brick.id] = true
 		var target := _to_world(brick.col + brick.width / 2.0, brick.row + 0.5)
 		var view: BrickView = _brick_views.get(brick.id)
 		if view == null:
 			view = BrickView.new()
 			_board_root.add_child(view)
-			# New rows start one row lower and slide up with everything else.
-			view.setup(brick, target if instant else target + Vector3.DOWN)
+			view.setup(brick, target + from)
 			_brick_views[brick.id] = view
 		view.target = target
 		view.set_hp(brick.hp)
 	for id in _brick_views.keys():
 		if not alive.has(id):
-			_brick_views[id].break_apart()
+			var view: BrickView = _brick_views[id]
+			if below.has(id):
+				view.queue_free()
+			else:
+				view.break_apart()
 			_brick_views.erase(id)
 
 	alive.clear()
 	for pickup in board.pickups:
+		if pickup.row >= board.rows:
+			continue
 		alive[pickup.id] = true
 		var target := _to_world(pickup.col + 0.5, pickup.row + 0.5)
 		var view: PickupView = _pickup_views.get(pickup.id)
 		if view == null:
 			view = PickupView.new()
 			_board_root.add_child(view)
-			view.setup(target if instant else target + Vector3.DOWN)
+			view.setup(target + from)
 			_pickup_views[pickup.id] = view
 		view.target = target
 	for id in _pickup_views.keys():
 		if not alive.has(id):
 			_pickup_views[id].collect()
 			_pickup_views.erase(id)
+
+	_sync_level_markers(from)
 
 	var used := 0
 	if game.volley != null and game.phase == TurnController.Phase.VOLLEY:
@@ -238,7 +292,56 @@ func _sync(instant: bool) -> void:
 	_launcher.position = launcher_target if instant else _launcher.position.lerp(launcher_target, 0.25)
 	var waiting := game.volley.to_launch if game.volley != null else game.ball_count
 	_ball_count.text = "x%d" % waiting
-	_ball_count.visible = waiting > 0 and game.phase != TurnController.Phase.WON
+	_ball_count.visible = waiting > 0
+
+
+## One marker per level line in view: a long tick and number on the gauge,
+## and a dashed line across the board.
+func _sync_level_markers(from: Vector3) -> void:
+	var alive := {}
+	for k in 4:
+		var level := game.level + k
+		var row := game.level_line_row + k * TurnController.LEVEL_ROWS
+		if row > game.board.rows:
+			break
+		alive[level] = true
+		var target := Vector3(0.0, -row, 0.0)
+		var marker: Node3D = _level_markers.get(level)
+		if marker == null:
+			marker = _make_level_marker(level)
+			marker.position = target + from
+			_level_markers[level] = marker
+		marker.set_meta("target", target)
+	var blend := 1.0 - exp(-BrickView.SLIDE_RATE * get_process_delta_time())
+	for level in _level_markers.keys():
+		var marker: Node3D = _level_markers[level]
+		if not alive.has(level):
+			marker.queue_free()
+			_level_markers.erase(level)
+			continue
+		marker.position = marker.position.lerp(marker.get_meta("target"), blend)
+
+
+func _make_level_marker(level: int) -> Node3D:
+	var marker := Node3D.new()
+	_board_root.add_child(marker)
+	var columns := float(game.board.columns)
+	_add_box(Vector3(LEFT_MARGIN - 0.1, 0.08, 0.05), Vector3(-columns / 2.0 - LEFT_MARGIN / 2.0, 0.0, 0.4), _flat_material(GAUGE_COLOR), marker)
+	var dash_material := _flat_material(GAUGE_COLOR.darkened(0.45))
+	var x := 0.15
+	while x < columns:
+		_add_box(Vector3(0.3, 0.05, 0.02), Vector3(-columns / 2.0 + x, 0.0, -0.5), dash_material, marker)
+		x += 0.55
+	var label := Label3D.new()
+	label.text = str(level)
+	label.font_size = 64
+	label.pixel_size = 0.011
+	label.outline_size = 14
+	label.outline_modulate = Color.BLACK
+	label.modulate = GAUGE_COLOR
+	label.position = Vector3(-columns / 2.0 - LEFT_MARGIN * 0.6, 0.45, 0.5)
+	marker.add_child(label)
+	return marker
 
 
 # --- Scene building ---------------------------------------------------------
@@ -252,6 +355,13 @@ func _build_room() -> void:
 	_add_box(Vector3(0.2, rows + 1.2, 1.0), Vector3(-columns / 2.0 - 0.1, -rows / 2.0 + 0.6, 0.0), wall)
 	_add_box(Vector3(0.2, rows + 1.2, 1.0), Vector3(columns / 2.0 + 0.1, -rows / 2.0 + 0.6, 0.0), wall)
 	_add_box(Vector3(columns + 0.4, 0.2, 1.0), Vector3(0.0, -rows - 0.1, 0.0), wall)
+
+	# The level gauge: a rail down the left with a small tick per row.
+	var gauge := _flat_material(Color(0.3, 0.33, 0.32))
+	var gauge_x := -columns / 2.0 - LEFT_MARGIN * 0.35
+	_add_box(Vector3(0.08, rows, 0.05), Vector3(gauge_x, -rows / 2.0, 0.3), gauge)
+	for row in range(1, int(rows)):
+		_add_box(Vector3(0.25, 0.04, 0.05), Vector3(gauge_x - 0.12, -row, 0.3), gauge)
 
 	# Row 0 is the danger row: tint it, and draw the line bricks must not cross.
 	_add_box(Vector3(columns, 1.0, 0.02), Vector3(0.0, -0.5, -0.54), _flat_material(Color(0.25, 0.08, 0.07)))
@@ -296,27 +406,27 @@ func _frame_camera() -> void:
 		return
 	# Flat, straight-on orthographic view sized to fit the board's width.
 	var size := get_viewport().get_visible_rect().size
-	var width := game.board.columns + SIDE_MARGIN * 2.0
+	var width := game.board.columns + LEFT_MARGIN + RIGHT_MARGIN
 	var units_per_px := width / size.x
 	var visible_height := size.y * units_per_px
 	_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	_camera.keep_aspect = Camera3D.KEEP_WIDTH
 	_camera.size = width
-	_camera.position = Vector3(0.0, TOP_MARGIN_PX * units_per_px - visible_height / 2.0, 20.0)
+	_camera.position = Vector3((RIGHT_MARGIN - LEFT_MARGIN) / 2.0, TOP_MARGIN_PX * units_per_px - visible_height / 2.0, 20.0)
 
 
 func _to_world(x: float, y: float) -> Vector3:
 	return Vector3(x - game.board.columns / 2.0, -y, 0.0)
 
 
-func _add_box(size: Vector3, at: Vector3, material: Material) -> MeshInstance3D:
+func _add_box(size: Vector3, at: Vector3, material: Material, parent: Node3D = null) -> MeshInstance3D:
 	var box := BoxMesh.new()
 	box.size = size
 	var mesh := MeshInstance3D.new()
 	mesh.mesh = box
 	mesh.material_override = material
 	mesh.position = at
-	_board_root.add_child(mesh)
+	(parent if parent else _board_root).add_child(mesh)
 	return mesh
 
 
