@@ -6,7 +6,7 @@ Break the lock before the walls close in.
 - [`CLAUDE.md`](./CLAUDE.md): project context (pitch, pillars, tech, art recipe)
 - [`BUILD-PROMPTS.md`](./BUILD-PROMPTS.md): full game design and the phase-by-phase build prompts
 
-**Status:** Phase 1 greybox reworked into depth levels (10-row levels, coins, restart at any level reached). Waiting for a play-test.
+**Status:** Phase 1 done: a greybox depth-level dig (10-row levels, coins, restart at any level reached). Next step is Phase 2 (depth curve and solver bot).
 
 ## Getting started
 

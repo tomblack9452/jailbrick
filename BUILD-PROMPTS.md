@@ -176,7 +176,7 @@ when they're imported.
 
 Paste one prompt per new session. Each assumes `CLAUDE.md` has been loaded.
 
-> Prompts for Phases 2–9 were written before the depth-level change (see the note
+> Prompts for Phases 3–9 were written before the depth-level change (see the note
 > at the top of Section B). Revise each one before running it: drop the lock, and
 > swap "levels" for generated depth levels plus the restart-at-level economy.
 
@@ -216,24 +216,29 @@ PSX shader yet), following Section B2.
 Stop when it's fun to play for 5 minutes on desktop with the mouse. Commit.
 ```
 
-### Phase 2 — Levels, generator and solver bot
+### Phase 2 — Depth curve and solver bot
 
 ```
-Phase 2 of Jailbrick.
+Phase 2 of Jailbrick. The game is an endless dig in 10-row levels (CLAUDE.md,
+Section B2 and B8). Phase 1 left the difficulty knobs hard-coded in
+LevelGenerator. Make the curve data-driven and measurable.
 
-1. Level format: a LevelData Resource (rows, brick types/HP, lock position/HP,
-   level type from B3, rise rate, seed for spawned rows). Load from levels/*.tres.
-2. A seeded procedural row generator with difficulty parameters.
-3. Hand-make 10 levels covering Breakout, Flood and Lockdown types.
-4. A headless solver bot (tools/solver.gd, run via godot --headless):
-   - Samples aim angles (e.g. 64 per turn) with a greedy + short lookahead
-     policy, using the core sim only.
-   - Plays each level K times with a baseline loadout (no paid anything, upgrades
-     at the level the curve expects at that point) and reports win rate,
-     average turns, and closest-loss margin.
-   - Fails (non-zero exit) if any level is under 60% win rate.
-5. Write a report to tools/reports/solver-latest.md.
-Commit levels, generator, bot and the first report.
+1. Depth curve: a DepthCurve Resource (levels/depth_curve.tres) that gives the
+   generator's knobs per level (fill/keep chance, gaps, HP per row and per
+   level, double-HP chance, +1 Ball chance). Shape it as a sawtooth in 5-level
+   bands: a short breather at the start of each band, then a ramp.
+   Play-test note: a human reached level 8 before it felt hard, so pressure
+   should start building around levels 3-4.
+2. Solver bot (tools/solver.gd, run via godot --headless): greedy aim choice
+   with a short lookahead on the core sim only (clone + play_turn). Pick an aim
+   count that keeps a full report under ~10 minutes. Plays K seeded runs from
+   level 1 and from a few restart levels, and reports depth reached (median,
+   p10, p90), turns per level, coins per run, and how many no-spend runs it
+   takes to afford each restart level.
+3. Target bands live in the curve resource. The bot exits non-zero if its median
+   depth falls outside them.
+4. Write the report to tools/reports/solver-latest.md.
+Commit the curve, the bot and the first report.
 ```
 
 ### Phase 3 — Full content build
@@ -350,8 +355,8 @@ what Claude builds, not typing code.
 | Phase | Est. hours | Status | Notes |
 |---|---|---|---|
 | 0 — Setup | 1–2 | ☑ | Godot 4.7.2, GUT 9.7.1. Windows binary used locally instead of Linux headless |
-| 1 — Proof of concept | 6–10 | ◐ | Greybox play-tested and liked. Now reworked into depth levels; needs another play-test |
-| 2 — Levels + solver | 6–10 | ☐ | |
+| 1 — Proof of concept | 6–10 | ☑ | Reworked into depth levels mid-phase. Play-test: plays great, reached level 8 before it got hard |
+| 2 — Depth curve + solver | 6–10 | ☐ | Prompt rewritten for depth levels |
 | 3 — Full content | 12–18 | ☐ | The biggest phase. Split it by world |
 | 4 — Progression | 6–8 | ☐ | |
 | 5 — PSX art + audio | 10–14 | ☐ | |
