@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="DepthCurve" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/depth_curve.gd" id="1_curve"]
+
+[resource]
+script = ExtResource("1_curve")
+band_size = 5
+band_ramp = PackedFloat32Array(0, 0.35, 0.6, 0.85, 1)
+fill_chance = Vector2(0.24, 0.33)
+fill_chance_per_band = 0.01
+keep_chance = Vector2(0.56, 0.66)
+keep_chance_per_band = 0.01
+min_gaps = Vector2(5, 3)
+max_run = Vector2(3, 5)
+hp_base = 1
+hp_step = Vector2(4, 10.5)
+hp_step_per_band = 1.0
+hp_per_row = Vector2(0.8, 1.2)
+double_chance = Vector2(0.06, 0.16)
+double_chance_per_band = 0.01
+pickup_chance = Vector2(0.42, 0.3)
+pickup_chance_per_band = -0.01
+target_depth = {
+1: Vector2i(5, 8),
+3: Vector2i(4, 7),
+6: Vector2i(7, 10),
+11: Vector2i(12, 15)
+}

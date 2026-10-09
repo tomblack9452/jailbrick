@@ -46,6 +46,9 @@ var balls_gained := 0
 var hits := 0
 var damage_dealt := 0
 
+## Reused by _move() so the hot loop doesn't allocate.
+var _touched: Array[Brick] = []
+
 
 func _init(p_board: Board, p_launch_x: float, p_dx: float, p_dy: float, p_count: int, p_damage := 1) -> void:
 	board = p_board
@@ -142,12 +145,17 @@ func _move(ball: Ball, ghost: bool) -> bool:
 
 	# Find every brick the ball overlaps before moving it, so a ball landing on
 	# the seam between two bricks hits both and bounces once off the flat top.
-	var touched: Array[Brick] = []
+	var touched := _touched
+	touched.clear()
 	var push_x := 0.0
 	var push_y := 0.0
-	for row in range(floori(ball.y - RADIUS), floori(ball.y + RADIUS) + 1):
-		for col in range(floori(ball.x - RADIUS), floori(ball.x + RADIUS) + 1):
-			var brick := board.brick_at(col, row)
+	# Hot loop: reads the board's cell grid directly instead of calling brick_at(),
+	# which is a lot faster in GDScript. Same cells, same order, same result.
+	var columns := board.columns
+	var cells := board._cells
+	for row in range(maxi(floori(ball.y - RADIUS), 0), mini(floori(ball.y + RADIUS), board.rows - 1) + 1):
+		for col in range(maxi(floori(ball.x - RADIUS), 0), mini(floori(ball.x + RADIUS), columns - 1) + 1):
+			var brick := cells[row * columns + col]
 			if brick == null or touched.has(brick):
 				continue
 			var contact := _contact(ball, brick)
@@ -179,7 +187,10 @@ func _move(ball: Ball, ghost: bool) -> bool:
 					hits += 1
 					damage_dealt += board.damage_brick(brick, damage)
 
-	if not ghost:
+	# Cheap check of the board's pickup grid first: most substeps have no pickup nearby.
+	var cell_col := floori(ball.x)
+	var cell_row := floori(ball.y)
+	if not ghost and board.in_bounds(cell_col, cell_row) 			and board._pickup_cells[cell_row * columns + cell_col] != null:
 		_collect_pickups(ball)
 	return bounced
 
@@ -233,14 +244,17 @@ func _keep_vertical(ball: Ball) -> void:
 
 
 func _collect_pickups(ball: Ball) -> void:
+	# The reach is under half a cell, so only a pickup in the ball's own cell can be touched.
+	var pickup := board.pickup_at(floori(ball.x), floori(ball.y))
+	if pickup == null:
+		return
 	var reach := RADIUS + PICKUP_RADIUS
-	for pickup: Pickup in board.pickups.duplicate():
-		var dx := ball.x - (pickup.col + 0.5)
-		var dy := ball.y - (pickup.row + 0.5)
-		if dx * dx + dy * dy < reach * reach:
-			board.remove_pickup(pickup)
-			if pickup.type == Pickup.Type.EXTRA_BALL:
-				balls_gained += 1
+	var dx := ball.x - (pickup.col + 0.5)
+	var dy := ball.y - (pickup.row + 0.5)
+	if dx * dx + dy * dy < reach * reach:
+		board.remove_pickup(pickup)
+		if pickup.type == Pickup.Type.EXTRA_BALL:
+			balls_gained += 1
 
 
 ## Traces the aim guide: where a ball fired this way goes, up to `bounces`

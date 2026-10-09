@@ -20,12 +20,14 @@ var pickups: Array[Pickup] = []
 
 var _next_id := 1
 var _cells: Array[Brick] = []
+var _pickup_cells: Array[Pickup] = []
 
 
 func _init(p_rows := DEFAULT_ROWS, p_columns := COLUMNS) -> void:
 	rows = p_rows
 	columns = p_columns
 	_cells.resize(rows * columns)
+	_pickup_cells.resize(rows * columns)
 
 
 func in_bounds(col: int, row: int) -> bool:
@@ -40,6 +42,8 @@ func brick_at(col: int, row: int) -> Brick:
 
 
 func pickup_at(col: int, row: int) -> Pickup:
+	if in_bounds(col, row):
+		return _pickup_cells[row * columns + col]
 	for pickup in pickups:
 		if pickup.col == col and pickup.row == row:
 			return pickup
@@ -66,6 +70,7 @@ func add_pickup(pickup: Pickup) -> Pickup:
 	pickup.id = _next_id
 	_next_id += 1
 	pickups.append(pickup)
+	_fill_pickup(pickup, pickup)
 	return pickup
 
 
@@ -84,6 +89,7 @@ func remove_brick(brick: Brick) -> void:
 
 func remove_pickup(pickup: Pickup) -> void:
 	pickups.erase(pickup)
+	_fill_pickup(pickup, null)
 
 
 ## Moves every brick and pickup by `delta` rows (negative = up). Pickups pushed
@@ -154,7 +160,15 @@ func _fill(brick: Brick, value: Brick) -> void:
 			_cells[brick.row * columns + brick.col + i] = value
 
 
+func _fill_pickup(pickup: Pickup, value: Pickup) -> void:
+	if in_bounds(pickup.col, pickup.row):
+		_pickup_cells[pickup.row * columns + pickup.col] = value
+
+
 func _rebuild_cells() -> void:
 	_cells.fill(null)
 	for brick in bricks:
 		_fill(brick, brick)
+	_pickup_cells.fill(null)
+	for pickup in pickups:
+		_fill_pickup(pickup, pickup)

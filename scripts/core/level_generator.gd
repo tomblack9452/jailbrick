@@ -2,8 +2,8 @@ class_name LevelGenerator
 extends RefCounted
 ## Seeded generator for the dig: each level is a block of LEVEL_ROWS rows.
 ##
-## Tuned with a throwaway greedy bot (7 aims a turn, sees each outcome): it
-## reaches level 5-7 by turn 60, while random aiming dies on level 1-2.
+## With a DepthCurve (levels/depth_curve.tres) the knobs below are set per
+## level from the curve. Without one they stay fixed, which tests use.
 ##
 ## Rows are built as clumps with channels between them: a brick is likely to
 ## continue under one from the previous row, long runs get a gap punched in,
@@ -23,21 +23,27 @@ var hp_per_row := 1.0 ## extra HP per row deeper within a level
 var hp_per_level := 8.0 ## extra HP per level
 var double_chance := 0.12 ## chance a brick spawns with double HP
 var pickup_chance := 0.35 ## chance a row has a +1 Ball
+var curve: DepthCurve = null
 
 var _last_row: Array[bool] = []
 
 
-func _init(p_seed := 0) -> void:
+func _init(p_seed := 0, p_curve: DepthCurve = null) -> void:
 	seed_value = p_seed
 	rng.seed = p_seed
+	curve = p_curve
 
 
 func hp_at(level: int, row_in_level: int) -> int:
+	if curve:
+		return curve.hp_at(level, row_in_level)
 	return hp_base + int(hp_per_level * (level - 1) + hp_per_row * row_in_level)
 
 
 ## Returns LEVEL_ROWS rows, top first. Each is {"bricks": [[col, hp], ...], "pickup": col or -1}.
 func generate_level(level: int, columns: int) -> Array[Dictionary]:
+	if curve:
+		curve.apply(self, level)
 	var out: Array[Dictionary] = []
 	for row_in_level in LEVEL_ROWS:
 		out.append(generate_row(hp_at(level, row_in_level), columns))
@@ -86,7 +92,7 @@ func generate_row(hp: int, columns: int) -> Dictionary:
 
 
 func clone() -> LevelGenerator:
-	var copy := LevelGenerator.new(seed_value)
+	var copy := LevelGenerator.new(seed_value, curve)
 	copy.rng.state = rng.state
 	copy.fill_chance = fill_chance
 	copy.keep_chance = keep_chance

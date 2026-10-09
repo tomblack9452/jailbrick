@@ -8,8 +8,8 @@ const COINS_PER_LEVEL := 10
 const LEVEL_BONUS_POINTS := 50
 const START_BALLS := 5
 ## Extra starting balls per level skipped, roughly the +1 Balls you'd have
-## picked up on the way down.
-const BALLS_PER_LEVEL := 3
+## picked up on the way down (the solver bot averages 4-5 a level).
+const BALLS_PER_LEVEL := 5
 
 
 static func coins_for(points: int, levels_cleared: int) -> int:

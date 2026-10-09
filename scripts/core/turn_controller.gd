@@ -54,8 +54,11 @@ func _init(p_board: Board, p_generator: LevelGenerator = null, p_ball_count := 1
 
 
 ## A fresh run starting at `p_level` with that level's top at START_ROW.
-static func create(seed: int, p_level := 1) -> TurnController:
-	var game := TurnController.new(Board.new(), LevelGenerator.new(seed), Economy.start_balls(p_level))
+## Uses levels/depth_curve.tres unless another curve is passed in.
+static func create(seed: int, p_level := 1, curve: DepthCurve = null) -> TurnController:
+	if curve == null:
+		curve = DepthCurve.load_default()
+	var game := TurnController.new(Board.new(), LevelGenerator.new(seed, curve), Economy.start_balls(p_level))
 	game.start_level = p_level
 	game.level = p_level
 	game.level_line_row = START_ROW + LEVEL_ROWS

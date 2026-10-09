@@ -62,7 +62,9 @@ the way and can bribe your way back down.
   5. **Check.** If any brick reaches the **danger line** (the row just below the
      launcher), the run ends, though you can continue once (see B8).
 - **Levels:** the dig is generated in blocks of 10 rows, one level each, with HP
-  climbing with depth. A gauge down the left side numbers each level's bottom line,
+  climbing with depth. Difficulty follows `levels/depth_curve.tres`: a sawtooth in
+  5-level bands (a breather level, then a ramp), with each band harder than the
+  last and pressure building from level 3. `tools/solver.gd` checks it. A gauge down the left side numbers each level's bottom line,
   and the HUD shows rows cleared out of 10.
 - **Points and coins:** 1 point per HP of damage, plus a bonus per level cleared.
   Coins = points / 20 + 10 per level cleared, banked when the run ends.
@@ -140,7 +142,8 @@ Charms drop from bosses, from Puzzle cells, and as one-time rewards for world mi
   top 3 rows of the pile). There is never a forced ad.
 - **Start from any level you've reached.** Level 1 is always free and instant.
   Deeper starts cost coins: 25 × (L − 1) × (L + 2), so level 2 is 100 and level 5
-  is 700. You start with 5 balls plus 3 per level skipped.
+  is 700. You start with 5 balls plus 5 per level skipped (the solver bot picks
+  up 4-5 +1 Balls a level on the way down; 3 left restarts starved).
 - Coins and your best level are saved between runs. There are no lives or energy.
 
 ### B9. Worlds (5) *(parked: worlds become depth bands, numbers to redo)*
@@ -356,7 +359,7 @@ what Claude builds, not typing code.
 |---|---|---|---|
 | 0 — Setup | 1–2 | ☑ | Godot 4.7.2, GUT 9.7.1. Windows binary used locally instead of Linux headless |
 | 1 — Proof of concept | 6–10 | ☑ | Reworked into depth levels mid-phase. Play-test: plays great, reached level 8 before it got hard |
-| 2 — Depth curve + solver | 6–10 | ☐ | Prompt rewritten for depth levels |
+| 2 — Depth curve + solver | 6–10 | ☑ | Sawtooth curve in `levels/depth_curve.tres`; bot median depth 5 from level 1, all 4 start targets pass in ~10 min. Restart balls 3→5 per level |
 | 3 — Full content | 12–18 | ☐ | The biggest phase. Split it by world |
 | 4 — Progression | 6–8 | ☐ | |
 | 5 — PSX art + audio | 10–14 | ☐ | |
