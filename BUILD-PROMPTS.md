@@ -50,6 +50,8 @@ you're dragged back.
      launcher), you lose, though you can continue (see B8).
 - **Win:** reduce the **lock** to 0 HP. The lock is a 1×1 or 2×1 brick with large
   HP, a distinct model, and often shielded (B4).
+- **The lock rises too.** It counts as a brick for the danger line, so its starting
+  row is the level's hard turn limit: the walls drag the door up to you.
 - **Turn counter:** the HUD always shows "rows until trapped" so the pressure is readable.
 - **Fast-forward:** hold to speed up the volley (×2, ×4). Add a recall button after 3 seconds.
 
@@ -79,6 +81,8 @@ you're dragged back.
 | **Guard** (boss) | Moves 1 column per turn. Carries or protects the lock |
 
 ### B5. Pickups (collected by touching them with a ball)
+
+Pickups that rise into the danger row are collected automatically.
 
 - **+1 Ball** (permanent for this level)
 - **Coin** (currency)
@@ -324,7 +328,7 @@ what Claude builds, not typing code.
 | Phase | Est. hours | Status | Notes |
 |---|---|---|---|
 | 0 — Setup | 1–2 | ☑ | Godot 4.7.2, GUT 9.7.1. Windows binary used locally instead of Linux headless |
-| 1 — Proof of concept | 6–10 | ☐ | Is it fun in greybox? If not, stop and fix here |
+| 1 — Proof of concept | 6–10 | ◐ | Built. Needs a 5-minute play-test to call it fun. Test level tuned with a throwaway greedy bot |
 | 2 — Levels + solver | 6–10 | ☐ | |
 | 3 — Full content | 12–18 | ☐ | The biggest phase. Split it by world |
 | 4 — Progression | 6–8 | ☐ | |

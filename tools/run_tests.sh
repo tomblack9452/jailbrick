@@ -10,9 +10,7 @@ if [[ -z "${GODOT:-}" ]]; then
 	GODOT=${GODOT:-godot}
 fi
 
-# First run (or after adding class_name scripts): build the .godot/ import cache.
-if [[ ! -d .godot ]]; then
-	"$GODOT" --headless --import --path . >/dev/null 2>&1 || true
-fi
+# Refresh the import cache so new class_name scripts are registered.
+"$GODOT" --headless --import --path . >/dev/null 2>&1 || true
 
 "$GODOT" --headless --path . -s addons/gut/gut_cmdln.gd -gexit "$@"

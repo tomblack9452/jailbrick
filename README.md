@@ -6,7 +6,7 @@ Break the lock before the walls close in.
 - [`CLAUDE.md`](./CLAUDE.md): project context (pitch, pillars, tech, art recipe)
 - [`BUILD-PROMPTS.md`](./BUILD-PROMPTS.md): full game design and the phase-by-phase build prompts
 
-**Status:** Phase 0 (project setup) done. Next step is Phase 1 (greybox proof of concept).
+**Status:** Phase 1 (greybox proof of concept) built and waiting for a play-test. Next step is Phase 2 (levels, generator and solver bot).
 
 ## Getting started
 
@@ -31,6 +31,10 @@ godot --path .
 On desktop the window opens at 540×960 (half size). The game itself is laid out
 at 1080×1920 portrait and stretches to fit.
 
+**Controls (Phase 1 greybox):** hold the left mouse button below the hatch to aim,
+release to fire. Right-click cancels the aim. Hold **Space** (or the `>>` button)
+to fast-forward, **Q** recalls the volley after 3 seconds, and **R** restarts.
+
 ### Run tests headless
 
 ```bash
@@ -38,8 +42,8 @@ at 1080×1920 portrait and stretches to fit.
 ```
 
 This uses `$GODOT` if it's set, otherwise the first Godot binary in `tools/godot/`,
-otherwise `godot` on your PATH. On the first run it also builds the `.godot/`
-import cache. Any extra arguments go straight to GUT, for example
+otherwise `godot` on your PATH. It refreshes the `.godot/` import cache first so
+new `class_name` scripts are picked up. Any extra arguments go straight to GUT, for example
 `./tools/run_tests.sh -gselect=test_smoke`.
 
 Or call GUT directly:

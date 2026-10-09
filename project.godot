@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Jailbrick"
 config/description="A turn-based brick-breaker escape game with a low-poly PSX look."
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/game.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 
 [display]
