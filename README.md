@@ -6,4 +6,62 @@ Break the lock before the walls close in.
 - [`CLAUDE.md`](./CLAUDE.md): project context (pitch, pillars, tech, art recipe)
 - [`BUILD-PROMPTS.md`](./BUILD-PROMPTS.md): full game design and the phase-by-phase build prompts
 
-**Status:** design done. Next step is Phase 0 (project setup).
+**Status:** Phase 0 (project setup) done. Next step is Phase 1 (greybox proof of concept).
+
+## Getting started
+
+Requires **Godot 4.7** (standard build, not .NET). Get it from
+[godotengine.org](https://godotengine.org/download) or drop the binary into
+`tools/godot/` (gitignored) so the scripts below find it.
+
+### Open in the editor
+
+1. Launch Godot and choose **Import**.
+2. Select this folder's `project.godot`.
+3. The GUT plugin is already enabled. Its panel sits at the bottom of the editor.
+
+### Run the game
+
+Press **F5** in the editor, or from the command line:
+
+```bash
+godot --path .
+```
+
+On desktop the window opens at 540×960 (half size). The game itself is laid out
+at 1080×1920 portrait and stretches to fit.
+
+### Run tests headless
+
+```bash
+./tools/run_tests.sh
+```
+
+This uses `$GODOT` if it's set, otherwise the first Godot binary in `tools/godot/`,
+otherwise `godot` on your PATH. On the first run it also builds the `.godot/`
+import cache. Any extra arguments go straight to GUT, for example
+`./tools/run_tests.sh -gselect=test_smoke`.
+
+Or call GUT directly:
+
+```bash
+godot --headless --import --path .
+godot --headless --path . -s addons/gut/gut_cmdln.gd -gexit
+```
+
+Test settings live in `.gutconfig.json`. Tests are in `tests/` and named `test_*.gd`.
+
+## Layout
+
+| Folder | What goes there |
+|---|---|
+| `scenes/` | `.tscn` scenes (text only) |
+| `scripts/core/` | Pure game logic: board, turns, bricks, ball sim. No nodes, runs headless |
+| `scripts/view/` | Nodes that render the core state |
+| `levels/` | `LevelData` resources (`.tres`) |
+| `shaders/` | PSX shaders (`.gdshader`) |
+| `assets/` | Imported art and audio, one folder per world |
+| `ui/` | Menus, HUD, fonts, themes |
+| `tests/` | GUT tests |
+| `tools/` | Scripts, solver bot, reports. `tools/godot/` holds local binaries (ignored) |
+| `addons/gut/` | GUT 9.7.1 (vendored) |

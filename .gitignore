@@ -1,0 +1,27 @@
+# Godot 4 cache and import data
+.godot/
+
+# Android build template (installed per machine from the editor)
+/android/
+
+# Export builds
+/build/
+/export/
+*.apk
+*.aab
+*.ipa
+*.pck
+*.zip
+
+# Local Godot binaries (see README: Running tests headless)
+/tools/godot/
+
+# Never commit binary scenes/resources: keep everything as .tscn/.tres
+*.scn
+*.res
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.tmp
+.vscode/

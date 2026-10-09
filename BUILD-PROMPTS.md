@@ -323,7 +323,7 @@ what Claude builds, not typing code.
 
 | Phase | Est. hours | Status | Notes |
 |---|---|---|---|
-| 0 — Setup | 1–2 | ☐ | |
+| 0 — Setup | 1–2 | ☑ | Godot 4.7.2, GUT 9.7.1. Windows binary used locally instead of Linux headless |
 | 1 — Proof of concept | 6–10 | ☐ | Is it fun in greybox? If not, stop and fix here |
 | 2 — Levels + solver | 6–10 | ☐ | |
 | 3 — Full content | 12–18 | ☐ | The biggest phase. Split it by world |

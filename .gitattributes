@@ -1,0 +1,27 @@
+# Normalise text files to LF so scenes and scripts diff cleanly across OSes
+* text=auto eol=lf
+
+# Godot text formats
+*.gd      text eol=lf
+*.tscn    text eol=lf
+*.tres    text eol=lf
+*.godot   text eol=lf
+*.import  text eol=lf
+*.uid     text eol=lf
+*.gdshader text eol=lf
+*.cfg     text eol=lf
+
+# Binary assets
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.svg  text
+*.ttf  binary
+*.otf  binary
+*.wav  binary
+*.ogg  binary
+*.mp3  binary
+*.glb  binary
+*.fbx  binary
+*.blend binary
