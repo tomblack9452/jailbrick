@@ -50,6 +50,8 @@ get forced to watch an ad.
 - Colour reduced to 15-bit (5 bits per channel) with ordered (Bayer) dithering
 - Distance fog in a colour that suits each world, short draw distance
 - Low-poly models (under ~500 tris for props), vertex colours for lighting where possible
+- Bricks stay flat tiles facing an orthographic camera so HP is always readable.
+  The 3D look is for the room around the board
 - UI: chunky bitmap-style font, hard drop shadows, CRT/VHS overlay that can be turned off
 
 ## Lessons from the reference games

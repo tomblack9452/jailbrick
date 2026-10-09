@@ -5,13 +5,12 @@ extends Node3D
 ## Board space (x right, y down, one unit per cell) maps to world space as
 ## (x - columns / 2, -y, 0), so the launcher line sits at world y = 0.
 
-## Board units of space above the launcher line, for the HUD.
-const TOP_MARGIN := 2.3
+## Space above the launcher line for the HUD, in UI pixels (1080-wide layout).
+const TOP_MARGIN_PX := 300.0
 const SIDE_MARGIN := 0.3
-const CAMERA_TILT_DEG := 5.0
-const MAX_TICKS_PER_FRAME := 48
-const AIM_DOT_SPACING := 0.3
-const AIM_DOT_COUNT := 80
+const MAX_TICKS_PER_FRAME := 64
+const AIM_DOT_SPACING := 0.45
+const AIM_DOT_COUNT := 120
 ## Ignore aims closer than this below the launcher line (board units).
 const MIN_AIM_DEPTH := 0.35
 ## Long volleys speed themselves up after this many seconds.
@@ -29,7 +28,7 @@ var _launcher: Node3D
 var _ball_count: Label3D
 var _danger_material: StandardMaterial3D
 var _ball_mesh := SphereMesh.new()
-var _ball_material := _flat_material(Color(0.95, 0.95, 0.9), true)
+var _ball_material := _flat_material(Color(0.95, 0.95, 0.9))
 
 var _aiming := false
 var _aim := PackedFloat64Array()
@@ -44,7 +43,6 @@ var _result_shown := false
 
 
 func _ready() -> void:
-	$Sun.rotation_degrees = Vector3(-50.0, -30.0, 0.0)
 	_ball_mesh.radius = BallSim.RADIUS
 	_ball_mesh.height = BallSim.RADIUS * 2.0
 	_hud.retry_pressed.connect(start_game)
@@ -256,38 +254,38 @@ func _build_room() -> void:
 	_add_box(Vector3(columns + 0.4, 0.2, 1.0), Vector3(0.0, -rows - 0.1, 0.0), wall)
 
 	# Row 0 is the danger row: tint it, and draw the line bricks must not cross.
-	_add_box(Vector3(columns, 1.0, 0.02), Vector3(0.0, -0.5, -0.54), _flat_material(Color(0.25, 0.08, 0.07), true))
-	_danger_material = _flat_material(DANGER_COLOR, true)
-	_add_box(Vector3(columns, 0.05, 0.05), Vector3(0.0, -1.0, 0.5), _danger_material)
-	_add_box(Vector3(columns, 0.04, 0.04), Vector3(0.0, 0.0, 0.5), _flat_material(Color(0.6, 0.6, 0.55), true))
+	_add_box(Vector3(columns, 1.0, 0.02), Vector3(0.0, -0.5, -0.54), _flat_material(Color(0.25, 0.08, 0.07)))
+	_danger_material = _flat_material(DANGER_COLOR)
+	_add_box(Vector3(columns, 0.08, 0.05), Vector3(0.0, -1.0, 0.5), _danger_material)
+	_add_box(Vector3(columns, 0.06, 0.04), Vector3(0.0, 0.0, 0.5), _flat_material(Color(0.6, 0.6, 0.55)))
 
 	_launcher = Node3D.new()
 	_board_root.add_child(_launcher)
 	var hatch := MeshInstance3D.new()
 	var hatch_mesh := BoxMesh.new()
-	hatch_mesh.size = Vector3(0.6, 0.2, 0.6)
+	hatch_mesh.size = Vector3(0.9, 0.25, 0.1)
 	hatch.mesh = hatch_mesh
 	hatch.material_override = _flat_material(Color(0.2, 0.22, 0.24))
-	hatch.position.y = 0.1
+	hatch.position.y = 0.125
 	_launcher.add_child(hatch)
 	_make_sphere(_ball_mesh, _ball_material, _launcher)
 	_ball_count = Label3D.new()
-	_ball_count.position = Vector3(0.0, 0.42, 0.3)
-	_ball_count.font_size = 72
-	_ball_count.pixel_size = 0.0045
+	_ball_count.position = Vector3(0.0, 0.75, 0.3)
+	_ball_count.font_size = 64
+	_ball_count.pixel_size = 0.012
 	_ball_count.outline_size = 18
 	_ball_count.outline_modulate = Color.BLACK
 	_launcher.add_child(_ball_count)
 
 	var dot_mesh := SphereMesh.new()
-	dot_mesh.radius = 0.045
-	dot_mesh.height = 0.09
-	var dot_material := _flat_material(Color(1.0, 1.0, 0.85), true)
+	dot_mesh.radius = 0.07
+	dot_mesh.height = 0.14
+	var dot_material := _flat_material(Color(1.0, 1.0, 0.85))
 	for i in AIM_DOT_COUNT:
 		var dot := _make_sphere(dot_mesh, dot_material)
 		dot.hide()
 		_aim_dots.append(dot)
-	var ghost_material := _flat_material(Color(1.0, 1.0, 0.85, 0.35), true)
+	var ghost_material := _flat_material(Color(1.0, 1.0, 0.85, 0.35))
 	ghost_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_ghost_ball = _make_sphere(_ball_mesh, ghost_material)
 	_ghost_ball.hide()
@@ -296,15 +294,15 @@ func _build_room() -> void:
 func _frame_camera() -> void:
 	if game == null:
 		return
+	# Flat, straight-on orthographic view sized to fit the board's width.
 	var size := get_viewport().get_visible_rect().size
 	var width := game.board.columns + SIDE_MARGIN * 2.0
-	var visible_height := width * size.y / size.x
-	var distance := (width / 2.0) / tan(deg_to_rad(_camera.fov / 2.0))
-	var centre_y := TOP_MARGIN - visible_height / 2.0
-	var tilt := deg_to_rad(CAMERA_TILT_DEG)
+	var units_per_px := width / size.x
+	var visible_height := size.y * units_per_px
+	_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	_camera.keep_aspect = Camera3D.KEEP_WIDTH
-	_camera.position = Vector3(0.0, centre_y + distance * tan(tilt), distance)
-	_camera.rotation = Vector3(-tilt, 0.0, 0.0)
+	_camera.size = width
+	_camera.position = Vector3(0.0, TOP_MARGIN_PX * units_per_px - visible_height / 2.0, 20.0)
 
 
 func _to_world(x: float, y: float) -> Vector3:
@@ -330,9 +328,8 @@ func _make_sphere(mesh: Mesh, material: Material, parent: Node3D = null) -> Mesh
 	return sphere
 
 
-static func _flat_material(color: Color, unshaded := false) -> StandardMaterial3D:
+static func _flat_material(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
-	if unshaded:
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	return material

@@ -24,8 +24,9 @@ func test_reflects_off_left_wall() -> void:
 
 
 func test_reflects_off_right_wall() -> void:
-	var sim := _sim(Board.new())
-	var ball := sim.add_ball(6.5, 5.0, 0.6, 0.8)
+	var board := Board.new()
+	var sim := _sim(board)
+	var ball := sim.add_ball(board.columns - 0.5, 5.0, 0.6, 0.8)
 	_step_until(sim, func(): return ball.dx < 0.0)
 	assert_almost_eq(ball.dx, -0.6, EPSILON)
 	assert_almost_eq(ball.dy, 0.8, EPSILON)
@@ -137,5 +138,5 @@ func test_aim_trace_stops_at_first_bounce_plus_tail() -> void:
 	var points := BallSim.trace_aim(board, 3.5, 0.0, 1.0, 1, 1.0)
 	assert_eq(points.size(), 3, "start, bounce, tail end")
 	assert_almost_eq(points[1].y, 6.0 - BallSim.RADIUS, 0.01, "bounce on top of the brick")
-	assert_almost_eq(points[2].y, points[1].y - 1.0, 0.05, "tail goes back up")
+	assert_almost_eq(points[2].y, points[1].y - 1.0, BallSim.STEP_LENGTH * 1.5, "tail goes back up")
 	assert_eq(board.bricks[0].hp, 5, "tracing doesn't damage")

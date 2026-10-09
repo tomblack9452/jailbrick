@@ -2,13 +2,17 @@ extends GutTest
 ## The turn loop: win, lose, rise/spawn, and determinism.
 
 
+## Column straight under the launcher at the start of a level.
+const MID := Board.COLUMNS / 2
+
+
 func _controller(board: Board, balls := 1) -> TurnController:
 	return TurnController.new(board, RowGenerator.new(7), balls)
 
 
 func test_win_when_lock_reaches_zero() -> void:
 	var board := Board.new()
-	board.add_brick(Lock.new(1, 3, 5))
+	board.add_brick(Lock.new(1, MID, 5))
 	var game := _controller(board)
 	assert_eq(game.play_turn(0.0, 1.0), TurnController.Phase.WON)
 	assert_eq(game.lock_hp(), 0)
@@ -16,7 +20,7 @@ func test_win_when_lock_reaches_zero() -> void:
 
 func test_win_ends_volley_immediately() -> void:
 	var board := Board.new()
-	board.add_brick(Lock.new(1, 3, 5))
+	board.add_brick(Lock.new(1, MID, 5))
 	var game := _controller(board, 20)
 	game.play_turn(0.0, 1.0)
 	assert_lt(game.turn, 2, "no rise after the lock breaks")
@@ -25,7 +29,7 @@ func test_win_ends_volley_immediately() -> void:
 func test_lose_when_brick_reaches_danger_line() -> void:
 	var board := Board.new()
 	board.add_brick(Brick.new(Brick.Type.STONE, 999, 0, 1))
-	board.add_brick(Lock.new(50, 3, 8))
+	board.add_brick(Lock.new(50, MID, 8))
 	var game := _controller(board)
 	assert_eq(game.rows_until_trapped(), 1)
 	assert_eq(game.play_turn(0.0, 1.0), TurnController.Phase.LOST)
@@ -49,13 +53,13 @@ func test_rise_step_moves_bricks_and_spawns_bottom_row() -> void:
 func test_first_ball_back_sets_next_launch() -> void:
 	var game := _controller(Board.new())
 	game.play_turn(0.5, 1.0)
-	assert_ne(game.launch_x, 3.5)
-	assert_between(game.launch_x, BallSim.RADIUS, 7.0 - BallSim.RADIUS)
+	assert_ne(game.launch_x, game.board.columns / 2.0)
+	assert_between(game.launch_x, BallSim.RADIUS, game.board.columns - BallSim.RADIUS)
 
 
 func test_pickup_adds_ball_next_turn() -> void:
 	var board := Board.new()
-	board.add_pickup(Pickup.new(Pickup.Type.EXTRA_BALL, 3, 4))
+	board.add_pickup(Pickup.new(Pickup.Type.EXTRA_BALL, MID, 4))
 	var game := _controller(board, 3)
 	game.play_turn(0.0, 1.0)
 	assert_eq(game.ball_count, 4)

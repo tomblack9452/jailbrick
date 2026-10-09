@@ -6,8 +6,8 @@ extends RefCounted
 ## In board space a cell (col, row) covers x in [col, col + 1] and
 ## y in [row, row + 1], with y pointing down.
 
-const COLUMNS := 7
-const DEFAULT_ROWS := 11
+const COLUMNS := 15
+const DEFAULT_ROWS := 22
 const DANGER_ROW := 0
 
 var columns := COLUMNS

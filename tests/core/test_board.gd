@@ -2,8 +2,8 @@ extends GutTest
 ## Board grid, brick damage and the rise step.
 
 
-func test_board_is_seven_columns() -> void:
-	assert_eq(Board.new().columns, 7)
+func test_board_is_fifteen_columns() -> void:
+	assert_eq(Board.new().columns, 15)
 
 
 func test_brick_takes_damage() -> void:
@@ -75,3 +75,17 @@ func test_clone_is_independent() -> void:
 	assert_eq(copy.lock.row, 6)
 	assert_eq(board.lock.row, 7)
 	assert_true(copy.lock is Lock)
+
+
+func test_generator_leaves_gaps_and_breaks_long_runs() -> void:
+	var generator := RowGenerator.new(5)
+	for turn in range(1, 40):
+		var row := generator.generate(turn, Board.COLUMNS)
+		var cols: Array[int] = []
+		for entry in row["bricks"]:
+			cols.append(entry[0])
+		assert_lte(cols.size(), Board.COLUMNS - generator.min_gaps)
+		var run := 0
+		for col in Board.COLUMNS:
+			run = run + 1 if cols.has(col) else 0
+			assert_lte(run, generator.max_run)

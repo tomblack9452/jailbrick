@@ -34,9 +34,14 @@ you're dragged back.
 
 ### B2. Board and turn loop
 
-- **Board:** portrait grid, **7 columns** wide. Your **launcher** (the hatch you
-  crawl from) sits on the **top line**. Brick rows **rise from the bottom**, like
-  sludge filling the room.
+- **Board:** portrait grid, **15 columns** wide and 22 rows tall. Your **launcher**
+  (the hatch you crawl from) sits on the **top line**. Brick rows **rise from the
+  bottom**, like sludge filling the room.
+- **Layout:** bricks come in clumps with channels and pockets between them, so
+  balls can work into tight spaces. Levels start with plenty of empty rows above
+  the pile.
+- **Bricks are flat tiles** seen straight on through an orthographic camera, so HP
+  numbers are always readable. The 3D PSX look is for the room around the board.
 - **Turn:**
   1. **Aim.** Drag to aim. A dotted guide line shows the first bounce, or two
      bounces with an upgrade.
@@ -182,7 +187,7 @@ Commit with a clear message. Don't build gameplay yet.
 Phase 1 of Jailbrick. Build the core turn loop in greybox (cubes, flat colours, no
 PSX shader yet), following Section B2.
 
-- scripts/core/: Board (7 columns), Brick (HP, type), Lock, Ball simulation with
+- scripts/core/: Board (15 columns), Brick (HP, type), Lock, Ball simulation with
   fixed timestep and deterministic maths, TurnController (aim -> fire -> return ->
   rise -> check). Core must run with no scene tree so it can be tested headless.
 - scripts/view/: renders the board in 3D with an orthographic-ish camera, aim
@@ -247,7 +252,7 @@ Phase 5 of Jailbrick. Apply the PSX look recipe from CLAUDE.md:
 - Low-res SubViewport + nearest upscale, vertex snap + affine texture shader,
   15-bit colour + Bayer dither post-process, per-world fog.
 - Import each world's asset pack into assets/<world>/. Build the backdrop rooms,
-  brick and lock models per world (keep bricks readable: the HP number always
+  flat brick and lock tiles per world (keep bricks readable: the HP number always
   sits on top, high contrast).
 - Game feel: hit flashes, screen shake (toggle), brick break particles, lock-break
   escape cutscene (camera pushes through the doorway).

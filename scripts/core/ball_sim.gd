@@ -11,10 +11,10 @@ extends RefCounted
 
 const TICK_RATE := 120
 const TICK := 1.0 / TICK_RATE
-const SUBSTEPS := 2
-const SPEED := 12.0 ## board units per second
+const SUBSTEPS := 3
+const SPEED := 24.0 ## board units (cells) per second
 const STEP_LENGTH := SPEED / TICK_RATE / SUBSTEPS
-const RADIUS := 0.12
+const RADIUS := 0.16
 const PICKUP_RADIUS := 0.3
 const LAUNCH_INTERVAL_TICKS := 6
 ## Smallest |dy| after a bounce. Stops balls skimming sideways forever.

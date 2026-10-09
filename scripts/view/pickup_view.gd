@@ -1,6 +1,6 @@
 class_name PickupView
 extends Node3D
-## Greybox +1 Ball pickup: a wobbling green ring.
+## Greybox +1 Ball pickup: a pulsing green ring.
 
 const COLOR := Color(0.35, 0.95, 0.45)
 
@@ -30,8 +30,9 @@ func collect() -> void:
 
 func _process(delta: float) -> void:
 	position = position.lerp(target, 1.0 - exp(-BrickView.SLIDE_RATE * delta))
-	_ring.rotation.y = sin(Time.get_ticks_msec() / 300.0) * 0.6
 	if _dying:
 		scale *= exp(-14.0 * delta)
 		if scale.x < 0.05:
 			queue_free()
+	else:
+		scale = Vector3.ONE * (1.0 + 0.1 * sin(Time.get_ticks_msec() / 160.0))
