@@ -2,6 +2,9 @@ class_name LevelGenerator
 extends RefCounted
 ## Seeded generator for the dig: each level is a block of LEVEL_ROWS rows.
 ##
+## Tuned with a throwaway greedy bot (7 aims a turn, sees each outcome): it
+## reaches level 5-7 by turn 60, while random aiming dies on level 1-2.
+##
 ## Rows are built as clumps with channels between them: a brick is likely to
 ## continue under one from the previous row, long runs get a gap punched in,
 ## and every row keeps a few empty columns. That leaves pockets and tight
@@ -16,10 +19,10 @@ var keep_chance := 0.62 ## chance a clump carries on from the row above
 var max_run := 4 ## longest unbroken run of bricks in a row
 var min_gaps := 4 ## fewest empty columns in a row
 var hp_base := 1 ## HP of the first row of level 1
-var hp_per_row := 0.5 ## extra HP per row deeper within a level
-var hp_per_level := 3.0 ## extra HP per level
+var hp_per_row := 1.0 ## extra HP per row deeper within a level
+var hp_per_level := 8.0 ## extra HP per level
 var double_chance := 0.12 ## chance a brick spawns with double HP
-var pickup_chance := 0.55 ## chance a row has a +1 Ball
+var pickup_chance := 0.35 ## chance a row has a +1 Ball
 
 var _last_row: Array[bool] = []
 
