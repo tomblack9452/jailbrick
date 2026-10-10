@@ -45,6 +45,7 @@ var _result_shown := false
 var _banked := 0
 var _shown_level := 1
 var _last_line_row := 0
+var _effects_seen := 0
 
 @onready var _camera: Camera3D = $Camera3D
 @onready var _board_root: Node3D = $Board
@@ -73,6 +74,7 @@ func start_run(level: int) -> void:
 	_aiming = false
 	_result_shown = false
 	_banked = 0
+	_effects_seen = 0
 	_hud.hide_trapped()
 
 	game = TurnController.create(randi(), level)
@@ -232,7 +234,7 @@ func _sync(instant: bool) -> void:
 
 	var alive := {}
 	var below := {}
-	for brick in board.bricks:
+	for brick in board.bricks + board.sludge:
 		if brick.row >= board.rows:
 			below[brick.id] = true
 			continue
@@ -274,6 +276,7 @@ func _sync(instant: bool) -> void:
 			_pickup_views.erase(id)
 
 	_sync_level_markers(from)
+	_sync_effects()
 
 	var used := 0
 	if game.volley != null and game.phase == TurnController.Phase.VOLLEY:
@@ -293,6 +296,34 @@ func _sync(instant: bool) -> void:
 	var waiting := game.volley.to_launch if game.volley != null else game.ball_count
 	_ball_count.text = "x%d" % waiting
 	_ball_count.visible = waiting > 0
+
+
+## Plays any new board effects: a flash over each gas blast and down each laser beam.
+func _sync_effects() -> void:
+	var effects := game.board.effects
+	if effects.size() < _effects_seen:
+		_effects_seen = 0 # a new volley cleared the list
+	for i in range(_effects_seen, effects.size()):
+		var effect: Dictionary = effects[i]
+		match effect["kind"]:
+			"blast":
+				_flash(Vector3(3.0, 3.0, 0.05), _to_world(effect["col"] + 0.5, effect["row"] + 0.5), Color(1.0, 0.6, 0.15, 0.8))
+			"laser":
+				var columns := float(game.board.columns)
+				if effect["vertical"]:
+					_flash(Vector3(0.3, game.board.rows, 0.05), _to_world(effect["col"] + 0.5, game.board.rows / 2.0), Color(1.0, 0.25, 0.25, 0.85))
+				else:
+					_flash(Vector3(columns, 0.3, 0.05), _to_world(columns / 2.0, effect["row"] + 0.5), Color(1.0, 0.25, 0.25, 0.85))
+	_effects_seen = effects.size()
+
+
+func _flash(size: Vector3, at: Vector3, color: Color) -> void:
+	var material := _flat_material(color)
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var box := _add_box(size, at + Vector3(0.0, 0.0, 0.6), material)
+	var tween := create_tween()
+	tween.tween_property(material, "albedo_color:a", 0.0, 0.35)
+	tween.tween_callback(box.queue_free)
 
 
 ## One marker per level line in view: a long tick and number on the gauge,

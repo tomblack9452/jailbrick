@@ -9,6 +9,8 @@ var id := 0
 var type := Type.EXTRA_BALL
 var col := 0
 var row := 0
+## Extra per-type data (the laser bar's direction).
+var data := 0
 
 
 func _init(p_type := Type.EXTRA_BALL, p_col := 0, p_row := 0) -> void:
@@ -20,4 +22,5 @@ func _init(p_type := Type.EXTRA_BALL, p_col := 0, p_row := 0) -> void:
 func clone() -> Pickup:
 	var copy := Pickup.new(type, col, row)
 	copy.id = id
+	copy.data = data
 	return copy

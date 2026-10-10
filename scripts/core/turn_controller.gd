@@ -10,6 +10,10 @@ extends RefCounted
 ##
 ## Drive it with fire() then step() once per BallSim.TICK (the view does this
 ## each frame), or call play_turn() to run a whole volley at once (tests, bots).
+##
+## After the rise, bricks that act on their own take their turn: rat nests
+## spawn rats and the Warden guard walks and spawns minions. Their choices come
+## from `rng`, seeded with the run, so a replay is exact.
 
 enum Phase { AIM, VOLLEY, LOST }
 
@@ -40,6 +44,9 @@ var continued := false
 var level_line_row := 0
 ## True for the turn right after a level was cleared (for the view's banner).
 var just_cleared := false
+## For bricks that act each turn (nests, the Warden). Separate from the
+## generator's so play never changes what the dig looks like.
+var rng := RandomNumberGenerator.new()
 
 var _next_chunk_row := 0
 var _next_chunk_level := 1
@@ -59,6 +66,7 @@ static func create(seed: int, p_level := 1, curve: DepthCurve = null) -> TurnCon
 	if curve == null:
 		curve = DepthCurve.load_default()
 	var game := TurnController.new(Board.new(), LevelGenerator.new(seed, curve), Economy.start_balls(p_level))
+	game.rng.seed = seed * 31 + 7
 	game.start_level = p_level
 	game.level = p_level
 	game.level_line_row = START_ROW + LEVEL_ROWS
@@ -89,6 +97,7 @@ func fire(dx: float, dy: float) -> bool:
 	var aim := clamp_aim(dx, dy)
 	if aim.is_empty():
 		return false
+	board.effects.clear()
 	volley = BallSim.new(board, launch_x, aim[0], aim[1], ball_count, damage)
 	phase = Phase.VOLLEY
 	return true
@@ -166,6 +175,7 @@ func clone() -> TurnController:
 	copy.just_cleared = just_cleared
 	copy._next_chunk_row = _next_chunk_row
 	copy._next_chunk_level = _next_chunk_level
+	copy.rng.state = rng.state
 	return copy
 
 
@@ -177,9 +187,11 @@ func snapshot() -> String:
 		"launch_x=%s" % var_to_str(launch_x),
 	]
 	for brick in board.bricks:
-		parts.append("b%d:%d,%d,%d" % [brick.id, brick.col, brick.row, brick.hp])
+		parts.append("b%d:%d,%d,%d,%d" % [brick.id, brick.type, brick.col, brick.row, brick.hp])
+	for puddle in board.sludge:
+		parts.append("s%d:%d,%d" % [puddle.id, puddle.col, puddle.row])
 	for pickup in board.pickups:
-		parts.append("p%d:%d,%d" % [pickup.id, pickup.col, pickup.row])
+		parts.append("p%d:%d,%d,%d" % [pickup.id, pickup.type, pickup.col, pickup.row])
 	return "|".join(parts)
 
 
@@ -199,8 +211,37 @@ func _end_volley() -> void:
 	else:
 		for i in rise_rate:
 			_shift(-1)
+	_brick_turns()
 	turn += 1
 	phase = Phase.LOST if board.is_trapped() else Phase.AIM
+
+
+## Nests and the Warden act once per turn, in board order, while in view.
+func _brick_turns() -> void:
+	for brick: Brick in board.bricks.duplicate():
+		if brick.is_destroyed() or brick.row <= Board.DANGER_ROW or brick.row >= board.rows:
+			continue
+		match brick.type:
+			Brick.Type.NEST:
+				brick.timer += 1
+				if brick.timer % Brick.NEST_EVERY == 0:
+					_spawn_next_to(brick, 1)
+			Brick.Type.GUARD:
+				if not board.move_brick(brick, brick.col + brick.heading):
+					brick.heading = -brick.heading
+					board.move_brick(brick, brick.col + brick.heading)
+				brick.timer += 1
+				if brick.timer % Brick.GUARD_MINION_EVERY == 0:
+					_spawn_next_to(brick, brick.minion_hp)
+
+
+## Puts a stone brick in a random free cell around `brick`, if there is one.
+func _spawn_next_to(brick: Brick, hp: int) -> void:
+	var cells := board.free_cells_around(brick)
+	if cells.is_empty():
+		return
+	var cell := cells[rng.randi_range(0, cells.size() - 1)]
+	board.add_brick(Brick.new(Brick.Type.STONE, hp, cell.x, cell.y))
 
 
 func _shift(delta: int) -> void:

@@ -16,6 +16,8 @@ const SPEED := 24.0 ## board units (cells) per second
 const STEP_LENGTH := SPEED / TICK_RATE / SUBSTEPS
 const RADIUS := 0.16
 const PICKUP_RADIUS := 0.3
+## Speed multiplier while a ball's centre is in a sludge cell.
+const SLUDGE_SLOW := 0.5
 const LAUNCH_INTERVAL_TICKS := 6
 ## Smallest |dy| after a bounce. Stops balls skimming sideways forever.
 const MIN_DY := 0.12
@@ -118,8 +120,14 @@ func step() -> void:
 ## Moves one ball one substep. Returns true if it bounced off something.
 ## A ghost ball (aim preview) bounces but never damages or collects anything.
 func _move(ball: Ball, ghost: bool) -> bool:
-	ball.x += ball.dx * STEP_LENGTH
-	ball.y += ball.dy * STEP_LENGTH
+	var step := STEP_LENGTH
+	var here_col := floori(ball.x)
+	var here_row := floori(ball.y)
+	if here_row >= 0 and here_row < board.rows and here_col >= 0 and here_col < board.columns \
+			and board._sludge_cells[here_row * board.columns + here_col] != null:
+		step *= SLUDGE_SLOW
+	ball.x += ball.dx * step
+	ball.y += ball.dy * step
 
 	if ball.y < 0.0 and ball.dy < 0.0:
 		ball.active = false
