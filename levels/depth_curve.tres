@@ -13,12 +13,12 @@ keep_chance_per_band = 0.01
 min_gaps = Vector2(5, 3)
 max_run = Vector2(3, 5)
 hp_base = 1
-hp_step = Vector2(4, 10.5)
-hp_step_per_band = 1.0
+hp_step = Vector2(5.5, 14)
+hp_step_per_band = -0.5
 hp_per_row = Vector2(0.8, 1.2)
 double_chance = Vector2(0.06, 0.16)
 double_chance_per_band = 0.01
-pickup_chance = Vector2(0.42, 0.3)
+pickup_chance = Vector2(0.45, 0.27)
 pickup_chance_per_band = -0.01
 special_chance = Vector2(0.08, 0.16)
 special_chance_per_band = 0.005
@@ -27,12 +27,11 @@ brick_weights = {
 "gas": 1.2,
 "iron": 2.0,
 "nest": 0.8,
-"sludge": 1.5
+"sludge": 0.8
 }
 pickup_weights = {
-"ball": 2.0,
 "coin": 3.0,
-"freeze": 1.0,
+"freeze": 0.6,
 "laser": 1.5,
 "splitter": 1.5
 }
@@ -57,7 +56,7 @@ twist_cycle = PackedStringArray("flood", "nest", "cache")
 twist_slot = 2
 warden_every = 10
 flood_rise = 2
-flood_hp = 0.6
+flood_hp = 0.7
 nest_chance = 0.14
 cache_crate_chance = 0.35
 cache_hp = 1.2
@@ -68,12 +67,12 @@ world_size = 10
 worlds = [{
 "name": "The Drains",
 "signature": ["sludge", "nest"],
-"specials": 1.0,
+"specials": 0.6,
 "tint": Color(0.16, 0.22, 0.17, 1)
 }, {
 "name": "Black Pines",
 "signature": ["crate"],
-"specials": 1.0,
+"specials": 1.6,
 "tint": Color(0.08, 0.11, 0.2, 1)
 }, {
 "name": "Scrap Row",

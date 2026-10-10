@@ -128,9 +128,12 @@ func test_pickups_arrive_on_their_levels() -> void:
 		assert_true(curve.pickup_pool(intro, true).any(func(e) -> bool: return e[0] == type))
 
 
-func test_rows_never_hand_out_extra_balls_as_specials() -> void:
-	assert_false(curve.pickup_pool(30, false).any(func(e) -> bool: return e[0] == Pickup.Type.EXTRA_BALL))
-	assert_true(curve.pickup_pool(30, true).any(func(e) -> bool: return e[0] == Pickup.Type.EXTRA_BALL))
+func test_extra_balls_only_come_from_rows() -> void:
+	assert_false(curve.pickup_pool(30, true).any(func(e) -> bool: return e[0] == Pickup.Type.EXTRA_BALL), "crates")
+	var custom := curve.duplicate() as DepthCurve
+	custom.pickup_weights = {"ball": 1.0, "coin": 1.0}
+	assert_false(custom.pickup_pool(30, false).any(func(e) -> bool: return e[0] == Pickup.Type.EXTRA_BALL), "row specials")
+	assert_true(custom.pickup_pool(30, true).any(func(e) -> bool: return e[0] == Pickup.Type.EXTRA_BALL))
 
 
 func test_crates_carry_introduced_drops() -> void:

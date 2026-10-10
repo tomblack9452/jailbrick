@@ -85,7 +85,7 @@ the way and can bribe your way back down.
 | Twist | What changes | Where |
 |---|---|---|
 | **Dig** (standard) | Nothing. Rows rise 1 per turn | Most levels |
-| **Flood** | Rows rise 2 per turn, but bricks have 40% less HP | Sewer pipes bursting |
+| **Flood** | Rows rise 2 per turn, but bricks have 30% less HP | Sewer pipes bursting |
 | **Nest** | Rat nests everywhere. Clear them before they fill the gaps | Needs rat nests |
 | **Cache** | A stash: lots of crates, so lots of pickups, but bricks have 20% more HP | Needs crates |
 | **Warden** (boss) | A wide **Warden guard** brick with ×8 HP walks 1 column per turn and drops a minion brick next to itself every 3 turns. The level clears like any other, so the guard has to go | Every 10th level: the end of each world (B9) |
@@ -103,7 +103,7 @@ the way and can bribe your way back down.
 |---|---|---|
 | **Stone** | Basic. Shows its HP | Yellow → red → purple by HP |
 | **Iron** | Takes half damage, rounded up over the hits so far (at ×1 damage, every other hit counts) | Steel grey, thick dark rim |
-| **Crate** | Drops a pickup (B5) in its cell when broken. Its HP is 60% of the row's | Brown with a dark cross |
+| **Crate** | Drops a coin, splitter, laser bar or freeze (B5) in its cell when broken, never a +1 Ball. Its HP is 60% of the row's | Brown with a dark cross |
 | **Gas can** | When broken, explodes for its full starting HP on the 8 neighbours. Blasts chain | Red with a yellow band |
 | **Rat nest** | Every 2 turns, spawns a 1 HP stone brick in an empty neighbouring cell (never the danger row) | Dark brown with a ring of dots |
 | **Sludge** | Not solid: balls pass through at half speed. Has no HP, never counts for clearing or trapping, and drains away at the danger row | Flat murky green, no number |
@@ -114,8 +114,10 @@ the way and can bribe your way back down.
 ### B5. Pickups (collected by touching them with a ball)
 
 Pickups that rise into the danger row are collected automatically, so none are
-ever lost. +1 Balls come from the generator's rows as before. The others come
-from crates, plus a small per-row chance set in the depth curve.
+ever lost. +1 Balls come only from the generator's rows, as before. The others
+come from crates, plus a small per-row chance set in the depth curve. (The
+solver showed +1 Balls from crates snowball: median depth from level 1 went
+from 5 to 9.5, so crates don't drop them.)
 
 | Pickup | Effect | If it rises into the danger row | Greybox look |
 |---|---|---|---|
@@ -197,6 +199,9 @@ spawn 3× as often in that world.
 
 - The difficulty curve is still the B2 sawtooth in 5-level bands, so each world
   is two bands: a breather, a ramp, a breather, a ramp, then the Warden.
+- Each world also scales how often bricks are special: ×0.6 in The Drains (the
+  helpers made world 1 too easy), ×1.6 in Black Pines (mostly crates, to ease
+  the HP jump at level 11), ×1 in Scrap Row and ×1.5 in The Hum and Lockdown.
 
 ### B10. Monetisation (ethical, final)
 
@@ -406,7 +411,7 @@ what Claude builds, not typing code.
 | 0 — Setup | 1–2 | ☑ | Godot 4.7.2, GUT 9.7.1. Windows binary used locally instead of Linux headless |
 | 1 — Proof of concept | 6–10 | ☑ | Reworked into depth levels mid-phase. Play-test: plays great, reached level 8 before it got hard |
 | 2 — Depth curve + solver | 6–10 | ☑ | Sawtooth curve in `levels/depth_curve.tres`; bot median depth 5 from level 1, all 4 start targets pass in ~10 min. Restart balls 3→5 per level |
-| 3 — Full content | 12–18 | ☐ | The biggest phase. Split it by world |
+| 3 — Bricks, pickups, twists, worlds | 12–18 | ☑ | All B4/B5 bricks and pickups, band twists and worlds in greybox; retuned so solver medians are 6.5/5/8/14 from levels 1/3/6/11 (all in band). Crates don't drop +1 Balls: they snowballed |
 | 4 — Progression | 6–8 | ☐ | |
 | 5 — PSX art + audio | 10–14 | ☐ | |
 | 6 — Audit | 4–6 | ☐ | |

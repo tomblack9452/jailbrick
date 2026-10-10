@@ -65,8 +65,9 @@ const PICKUP_NAMES := {
 ## from BRICK_NAMES.
 @export var brick_weights := {"crate": 3.0, "sludge": 1.5, "nest": 0.8, "iron": 2.0, "gas": 1.2}
 ## Relative odds of each pickup a crate drops, or (without "ball") a row's
-## special pickup. Keys are names from PICKUP_NAMES.
-@export var pickup_weights := {"ball": 2.0, "coin": 3.0, "freeze": 1.0, "splitter": 1.5, "laser": 1.5}
+## special pickup. Keys are names from PICKUP_NAMES. Leave "ball" out: the
+## solver found +1 Balls from crates snowball (median depth 5 -> 9.5).
+@export var pickup_weights := {"coin": 3.0, "freeze": 0.6, "splitter": 1.5, "laser": 1.5}
 ## Chance a row gets a special pickup (not +1 Ball) in one of its gaps.
 @export var special_pickup_chance := Vector2(0.1, 0.06)
 ## Level each special brick, pickup and twist first appears. Anything missing
@@ -242,7 +243,8 @@ func brick_pool(level: int) -> Array:
 
 
 ## [[Pickup.Type, weight], ...] for the pickups in play on `level`. Rows only
-## use the specials (`with_ball` false); crates can also drop a +1 Ball.
+## use the specials (`with_ball` false); crates could also drop a +1 Ball if
+## the weights had one.
 func pickup_pool(level: int, with_ball: bool) -> Array:
 	var pool := []
 	for name in pickup_weights:
