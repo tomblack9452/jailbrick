@@ -28,6 +28,10 @@ kept separate so Claude Code loads it every session.
 > dig in 10-row levels (B2), and coins buy a start at any level you've reached
 > (B8). Locks are dropped for now. Anything below marked *(parked)* was written
 > for the lock design and needs a rethink before it's built.
+>
+> **2026-10-10:** level types became band twists (B3), worlds became 10-level
+> depth bands with brick introduction levels (B9), and puzzle cells and key
+> shards are parked.
 
 ### B1. Fantasy and framing
 
@@ -71,41 +75,55 @@ the way and can bribe your way back down.
 - **Turn counter:** the HUD always shows "trapped in N" so the pressure is readable.
 - **Fast-forward:** hold to speed up the volley (×2, ×4). Add a recall button after 3 seconds.
 
-### B3. Level types (6) *(parked: written for locks)*
+### B3. Band twists
 
-| Type | Twist | Example |
+> **2026-10-10:** level types became band twists. Each 5-level band of the depth
+> curve (B2) gets one twist level, plus a Warden boss at the end of every world.
+> Vault, Lockdown and Puzzle were written for the lock and are *(parked)*.
+
+| Twist | What changes | Where |
 |---|---|---|
-| **Breakout** (standard) | The lock sits mid-pile and rows rise every turn | Most levels |
-| **Flood** | Rows rise 2 per turn, but the lock has lower HP | Sewer pipes bursting |
-| **Vault** | The lock is chained. Break every **chain brick** first to make it vulnerable | Mid/late world |
-| **Warden** (boss) | The lock is carried by a moving **guard brick** that shuffles columns and spawns minions | End of each world |
-| **Lockdown** (survival) | No lock at first. Survive *X* turns, then the lock drops in | Pacing break |
-| **Puzzle** | Fixed balls, no rising, limited shots. Break the lock in exactly *N* volleys | Optional side cells |
+| **Dig** (standard) | Nothing. Rows rise 1 per turn | Most levels |
+| **Flood** | Rows rise 2 per turn, but bricks have 40% less HP | Sewer pipes bursting |
+| **Nest** | Rat nests everywhere. Clear them before they fill the gaps | Needs rat nests |
+| **Cache** | A stash: lots of crates, so lots of pickups, but bricks have 20% more HP | Needs crates |
+| **Warden** (boss) | A wide **Warden guard** brick with ×8 HP walks 1 column per turn and drops a minion brick next to itself every 3 turns. The level clears like any other, so the guard has to go | Every 10th level: the end of each world (B9) |
+
+- The twist sits on the **third level of each band** (pressure 0.6). Bands cycle
+  through none → Flood → Nest → Cache → Flood → … so levels 8, 13, 18, 23 … have
+  a twist. A twist whose brick isn't introduced yet falls back to Flood.
+- Every knob (which twists, the slot, HP multipliers, the Warden's HP, pace and
+  minions) lives in `levels/depth_curve.tres`, so the solver can tune it.
+- The HUD's level banner names the twist ("Level 8: Flood").
 
 ### B4. Bricks
 
-| Brick | Behaviour |
-|---|---|
-| **Stone** | Basic. Shows its HP |
-| **Iron** | Takes half damage (round up) |
-| **Crate** | Drops a pickup when broken |
-| **Gas can** | Explodes for damage on the 8 neighbours |
-| **Rat nest** | Every 2 turns, spawns a 1 HP stone brick in an empty adjacent cell |
-| **Chain** *(parked)* | Linked to the lock. The lock is invulnerable while any chain stands |
-| **Sludge** | Slows balls that pass near it. Doesn't block |
-| **Shield** *(parked)* | Sits next to the lock and absorbs the first hit of each volley |
-| **Guard** (boss) *(parked)* | Moves 1 column per turn. Carries or protects the lock |
+| Brick | Behaviour | Greybox look |
+|---|---|---|
+| **Stone** | Basic. Shows its HP | Yellow → red → purple by HP |
+| **Iron** | Takes half damage, rounded up over the hits so far (at ×1 damage, every other hit counts) | Steel grey, thick dark rim |
+| **Crate** | Drops a pickup (B5) in its cell when broken. Its HP is 60% of the row's | Brown with a dark cross |
+| **Gas can** | When broken, explodes for its full starting HP on the 8 neighbours. Blasts chain | Red with a yellow band |
+| **Rat nest** | Every 2 turns, spawns a 1 HP stone brick in an empty neighbouring cell (never the danger row) | Dark brown with a ring of dots |
+| **Sludge** | Not solid: balls pass through at half speed. Has no HP, never counts for clearing or trapping, and drains away at the danger row | Flat murky green, no number |
+| **Warden guard** (boss) | 2 cells wide. Moves 1 column per turn, turning at walls and bricks, and spawns minions (B3 Warden) | Dark blue with a white "W" |
+| **Chain** *(parked)* | Linked to the lock. The lock is invulnerable while any chain stands | |
+| **Shield** *(parked)* | Sits next to the lock and absorbs the first hit of each volley | |
 
 ### B5. Pickups (collected by touching them with a ball)
 
-Pickups that rise into the danger row are collected automatically.
+Pickups that rise into the danger row are collected automatically, so none are
+ever lost. +1 Balls come from the generator's rows as before. The others come
+from crates, plus a small per-row chance set in the depth curve.
 
-- **+1 Ball** (permanent for this run)
-- **Coin** (currency)
-- **Splitter:** the next ball to pass through splits into 3
-- **Laser bar:** a one-shot horizontal or vertical beam that deals 1 damage per brick in its line
-- **Freeze:** the next "Rise" step is skipped
-- **Key shard:** collect 3 across a world to unlock its bonus **Puzzle** cell
+| Pickup | Effect | If it rises into the danger row | Greybox look |
+|---|---|---|---|
+| **+1 Ball** | Permanent for this run | +1 ball | Green ring |
+| **Coin** | +10 coins, banked with the run's other coins | +10 coins | Gold disc |
+| **Splitter** | The ball that touches it splits into 3 (the extras last this volley only) | The first ball of the next volley splits | Three cyan dots |
+| **Laser bar** | A one-shot horizontal or vertical beam: 1 damage (times the damage multiplier) to every brick in its line | Fires where it is | Red bar, flat or upright |
+| **Freeze** | The next rise step is skipped (stacks) | Same | Pale blue diamond |
+| **Key shard** *(parked)* | Collect 3 across a world to unlock its bonus Puzzle cell | | |
 
 ### B6. Upgrades (permanent, bought with coins)
 
@@ -146,22 +164,38 @@ Charms drop from bosses, from Puzzle cells, and as one-time rewards for world mi
   up 4-5 +1 Balls a level on the way down; 3 left restarts starved).
 - Coins and your best level are saved between runs. There are no lives or energy.
 
-### B9. Worlds (5) *(parked: worlds become depth bands, numbers to redo)*
+### B9. Worlds (depth bands)
+
+> **2026-10-10:** worlds are 10-level depth bands. Each world ends on a Warden
+> boss level (B3). Puzzle cells and key shards are *(parked)*.
 
 Each world maps to one PSX asset pack. Add the asset links in `assets/README.md`
-when they're imported.
+when they're imported. Until Phase 5 the HUD shows the world name and the board
+gets a greybox tint per world.
 
-| # | World | Escape story beat | Asset pack | Fog/palette | Signature brick |
-|---|---|---|---|---|---|
-| 1 | **The Drains** | Out through the cell's floor grate into the sewers | PSX Sewers *(licence to verify, Phase 8)* | Green-grey, drippy | Sludge, Rat nest |
-| 2 | **Black Pines** | Out of the outflow pipe into night woods | PSX Trees | Blue-black, torch-lit | Crate-heavy |
-| 3 | **Scrap Row** | A scrapyard full of wrecked cars between you and the road | PSX Cars / junk | Rust orange, sodium lights | Iron, Gas can |
-| 4 | **The Hum** | Something isn't right. A place that shouldn't exist | PSX "weird" pack | Purple static, heavy dither | Glitch variants |
-| 5 | **Lockdown** (finale) | Back at the start, but you know the way out now | Remix of all packs | Shifts per level | Everything + final Warden |
+| # | World | Levels | Escape story beat | Asset pack | Fog/palette | Signature |
+|---|---|---|---|---|---|---|
+| 1 | **The Drains** | 1–10 | Out through the cell's floor grate into the sewers | PSX Sewers *(licence to verify, Phase 8)* | Green-grey, drippy | Sludge, Rat nest |
+| 2 | **Black Pines** | 11–20 | Out of the outflow pipe into night woods | PSX Trees | Blue-black, torch-lit | Crate-heavy |
+| 3 | **Scrap Row** | 21–30 | A scrapyard full of wrecked cars between you and the road | PSX Cars / junk | Rust orange, sodium lights | Iron, Gas can |
+| 4 | **The Hum** | 31–40 | Something isn't right. A place that shouldn't exist | PSX "weird" pack | Purple static, heavy dither | Everything, denser *(glitch variants parked)* |
+| 5 | **Lockdown** (finale) | 41+ | Back at the start, but you know the way out now | Remix of all packs | Shifts per level | Everything, Warden every 10 |
 
-- **Levels per world:** 20 (16 main + 1 Warden boss + 3 optional Puzzle cells) = **100 total**.
-- **Difficulty curve:** a sawtooth. It ramps within a world, eases at the start
-  of the next, and new brick types are introduced one at a time.
+**Introduction levels.** One new thing at a time. Each brick or pickup first
+appears on its level and stays in the mix after that. A world's signature bricks
+spawn 3× as often in that world.
+
+| Level | New | Level | New |
+|---|---|---|---|
+| 1 | Stone, +1 Ball, Coin | 8 | Flood twist |
+| 2 | Crate | 9 | Laser bar |
+| 3 | Freeze | 10 | Warden boss |
+| 4 | Sludge | 13 | Iron, Nest twist |
+| 5 | Splitter | 17 | Gas can |
+| 7 | Rat nest | 18 | Cache twist |
+
+- The difficulty curve is still the B2 sawtooth in 5-level bands, so each world
+  is two bands: a breather, a ramp, a breather, a ramp, then the Warden.
 
 ### B10. Monetisation (ethical, final)
 
@@ -179,7 +213,7 @@ when they're imported.
 
 Paste one prompt per new session. Each assumes `CLAUDE.md` has been loaded.
 
-> Prompts for Phases 3–9 were written before the depth-level change (see the note
+> Prompts for Phases 4–9 were written before the depth-level change (see the note
 > at the top of Section B). Revise each one before running it: drop the lock, and
 > swap "levels" for generated depth levels plus the restart-at-level economy.
 
@@ -244,16 +278,27 @@ LevelGenerator. Make the curve data-driven and measurable.
 Commit the curve, the bot and the first report.
 ```
 
-### Phase 3 — Full content build
+### Phase 3 — Bricks, pickups, twists and worlds
 
 ```
-Phase 3 of Jailbrick. Implement all of Section B3–B5:
-- All 6 level types, including the Warden boss (moving guard brick + minions).
-- All bricks in B4 and all pickups in B5, each with GUT tests.
-- Author the 100 levels across 5 worlds (B9), using the generator for drafts
-  and hand-tuning the result. Introduce one new mechanic at a time.
-- Run the solver bot on every level and fix anything under 60%.
-Commit in chunks (per world). Keep greybox visuals, art comes in Phase 5.
+Phase 3 of Jailbrick. Read CLAUDE.md and Sections B2-B5, B8 and B9 first.
+Skip anything marked (parked).
+
+1. Bricks (B4): iron, crate, gas can, rat nest, sludge and the Warden guard,
+   in scripts/core with GUT tests, and a greybox look for each in
+   scripts/view that reads without art.
+2. Pickups (B5): coin, splitter, laser bar and freeze, same rules: core +
+   tests + greybox look. Pickups that rise into the danger row still count.
+3. Twists and worlds: band twists from B3 (Flood, Nest, Cache, and the Warden
+   boss on every 10th level) and the world bands from B9, with its brick
+   introduction levels, all driven by levels/depth_curve.tres. The HUD shows
+   the world name, with a greybox tint per world.
+4. Keep the sim deterministic: the determinism and clone tests must still
+   pass, and ./tools/run_tests.sh must be green.
+5. Re-run tools/solver.gd and retune the curve so the Phase 2 target bands
+   still hold. Refresh tools/reports/solver-latest.md.
+Commit in chunks (bricks, pickups, twists and worlds, retune). Keep greybox
+visuals: art comes in Phase 5. Ask before any design change beyond the doc.
 ```
 
 ### Phase 4 — Progression and saves

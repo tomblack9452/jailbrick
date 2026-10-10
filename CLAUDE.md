@@ -68,7 +68,8 @@ Reference games: *Brick Out Shoot*, *Break Bricks*, *Bricks Breaker RPG*,
   and progression can be earned. Copy that approach.
 - The aim-and-volley ("Ballz") loop is satisfying. Keep the aim line clear and the
   volley fast, and add a fast-forward button.
-- Endless modes get stale, so levels with a goal (the lock) keep things fresh.
+- Endless modes get stale, so band twists (Flood, Nest, Cache) and a Warden boss
+  at the end of each world keep things fresh.
 
 ## Working rules for Claude Code
 
