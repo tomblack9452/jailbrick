@@ -20,6 +20,79 @@ double_chance = Vector2(0.06, 0.16)
 double_chance_per_band = 0.01
 pickup_chance = Vector2(0.42, 0.3)
 pickup_chance_per_band = -0.01
+special_chance = Vector2(0.08, 0.16)
+special_chance_per_band = 0.005
+brick_weights = {
+"crate": 3.0,
+"gas": 1.2,
+"iron": 2.0,
+"nest": 0.8,
+"sludge": 1.5
+}
+pickup_weights = {
+"ball": 2.0,
+"coin": 3.0,
+"freeze": 1.0,
+"laser": 1.5,
+"splitter": 1.5
+}
+special_pickup_chance = Vector2(0.1, 0.06)
+introductions = {
+"cache": 18,
+"coin": 1,
+"crate": 2,
+"flood": 8,
+"freeze": 3,
+"gas": 17,
+"iron": 13,
+"laser": 9,
+"nest": 7,
+"sludge": 4,
+"splitter": 5,
+"warden": 10
+}
+crate_hp = 0.6
+first_twist_band = 1
+twist_cycle = PackedStringArray("flood", "nest", "cache")
+twist_slot = 2
+warden_every = 10
+flood_rise = 2
+flood_hp = 0.6
+nest_chance = 0.14
+cache_crate_chance = 0.35
+cache_hp = 1.2
+warden_hp = 8.0
+warden_minion_hp = 0.5
+warden_row = 3
+world_size = 10
+worlds = [{
+"name": "The Drains",
+"signature": ["sludge", "nest"],
+"specials": 1.0,
+"tint": Color(0.16, 0.22, 0.17, 1)
+}, {
+"name": "Black Pines",
+"signature": ["crate"],
+"specials": 1.0,
+"tint": Color(0.08, 0.11, 0.2, 1)
+}, {
+"name": "Scrap Row",
+"signature": ["iron", "gas"],
+"specials": 1.0,
+"tint": Color(0.3, 0.16, 0.07, 1)
+}, {
+"name": "The Hum",
+"signature": [],
+"specials": 1.5,
+"tint": Color(0.22, 0.09, 0.28, 1)
+}, {
+"cycle_tints": true,
+"name": "Lockdown",
+"signature": [],
+"specials": 1.5,
+"tint": Color(0.2, 0.2, 0.2, 1)
+}]
+signature_weight = 3.0
 target_depth = {
 1: Vector2i(5, 8),
 3: Vector2i(4, 7),

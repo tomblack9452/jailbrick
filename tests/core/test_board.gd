@@ -112,8 +112,8 @@ func test_generator_leaves_gaps_and_breaks_long_runs() -> void:
 	for i in 40:
 		var row := generator.generate_row(5, Board.COLUMNS)
 		var cols: Array[int] = []
-		for entry in row["bricks"]:
-			cols.append(entry[0])
+		for brick: Brick in row["bricks"]:
+			cols.append(brick.col)
 		assert_lte(cols.size(), Board.COLUMNS - generator.min_gaps)
 		var run := 0
 		for col in Board.COLUMNS:

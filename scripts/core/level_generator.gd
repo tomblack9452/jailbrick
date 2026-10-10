@@ -9,6 +9,11 @@ extends RefCounted
 ## continue under one from the previous row, long runs get a gap punched in,
 ## and every row keeps a few empty columns. That leaves pockets and tight
 ## spaces for balls to get into. HP climbs with depth.
+##
+## With a curve, some bricks are special (B4) and some gaps hold special
+## pickups (B5), from whatever the curve has introduced by that level, and the
+## level's twist (B3) shapes it: Flood and Cache scale HP, Nest adds rat nests,
+## Cache adds crates, and Warden levels get the guard.
 
 const LEVEL_ROWS := 10
 
@@ -25,6 +30,15 @@ var double_chance := 0.12 ## chance a brick spawns with double HP
 var pickup_chance := 0.35 ## chance a row has a +1 Ball
 var curve: DepthCurve = null
 
+## Per-level content, set by _prepare() from the curve. Empty without one.
+var _level := 1
+var _twist := ""
+var _special_chance := 0.0
+var _special_pickup_chance := 0.0
+var _brick_pool := []
+var _drop_pool := []
+var _row_pickup_pool := []
+
 var _last_row: Array[bool] = []
 
 
@@ -40,13 +54,17 @@ func hp_at(level: int, row_in_level: int) -> int:
 	return hp_base + int(hp_per_level * (level - 1) + hp_per_row * row_in_level)
 
 
-## Returns LEVEL_ROWS rows, top first. Each is {"bricks": [[col, hp], ...], "pickup": col or -1}.
+## Returns LEVEL_ROWS rows, top first. Each is {"bricks": [Brick, ...],
+## "pickups": [Pickup, ...]} with each thing's row set to 0: the caller
+## places the row on the board.
 func generate_level(level: int, columns: int) -> Array[Dictionary]:
-	if curve:
-		curve.apply(self, level)
+	_prepare(level)
 	var out: Array[Dictionary] = []
+	var hp_scale := curve.twist_hp_at(level) if curve else 1.0
 	for row_in_level in LEVEL_ROWS:
-		out.append(generate_row(hp_at(level, row_in_level), columns))
+		out.append(generate_row(maxi(1, int(hp_at(level, row_in_level) * hp_scale)), columns))
+	if _twist == "warden":
+		_add_warden(out, columns)
 	return out
 
 
@@ -77,18 +95,100 @@ func generate_row(hp: int, columns: int) -> Dictionary:
 		filled[rng.randi_range(0, columns - 1)] = true
 	_last_row = filled
 
-	var bricks: Array = []
+	var bricks: Array[Brick] = []
 	var gaps: Array[int] = []
 	for col in columns:
 		if filled[col]:
-			bricks.append([col, hp * 2 if rng.randf() < double_chance else hp])
+			var brick_hp := hp * 2 if rng.randf() < double_chance else hp
+			bricks.append(_make_brick(col, brick_hp, hp))
 		else:
 			gaps.append(col)
 
-	var pickup := -1
+	var pickups: Array[Pickup] = []
 	if rng.randf() < pickup_chance:
-		pickup = gaps[rng.randi_range(0, gaps.size() - 1)]
-	return {"bricks": bricks, "pickup": pickup}
+		pickups.append(Pickup.new(Pickup.Type.EXTRA_BALL, _take_gap(gaps)))
+	if not _row_pickup_pool.is_empty() and gaps.size() > 0 and rng.randf() < _special_pickup_chance:
+		pickups.append(_make_pickup(_pick(_row_pickup_pool), _take_gap(gaps)))
+	return {"bricks": bricks, "pickups": pickups}
+
+
+## Reads the curve's content for `level`. Without a curve, everything is stone.
+func _prepare(level: int) -> void:
+	_level = level
+	if curve == null:
+		return
+	curve.apply(self, level)
+	_twist = curve.twist_at(level)
+	_special_chance = curve.special_chance_at(level)
+	_special_pickup_chance = curve.special_pickup_chance_at(level)
+	_brick_pool = curve.brick_pool(level)
+	_drop_pool = curve.pickup_pool(level, true)
+	_row_pickup_pool = curve.pickup_pool(level, false)
+
+
+## A brick for a filled cell: stone, or a special one by the level's odds.
+## `row_hp` is the row's base HP (before any double).
+func _make_brick(col: int, hp: int, row_hp: int) -> Brick:
+	if curve == null:
+		return Brick.new(Brick.Type.STONE, hp, col)
+	var type := Brick.Type.STONE
+	if _twist == "nest" and rng.randf() < curve.nest_chance:
+		type = Brick.Type.NEST
+	elif _twist == "cache" and rng.randf() < curve.cache_crate_chance:
+		type = Brick.Type.CRATE
+	elif not _brick_pool.is_empty() and rng.randf() < _special_chance:
+		type = _pick(_brick_pool)
+	if type == Brick.Type.SLUDGE:
+		return Brick.new(type, 1, col)
+	var brick := Brick.new(type, hp, col)
+	if type == Brick.Type.CRATE:
+		brick = Brick.new(type, maxi(1, int(row_hp * curve.crate_hp)), col)
+		if not _drop_pool.is_empty():
+			var drop := _make_pickup(_pick(_drop_pool), col)
+			brick.drop = drop.type
+			brick.drop_data = drop.data
+	return brick
+
+
+func _make_pickup(type: Pickup.Type, col: int) -> Pickup:
+	var data := 0
+	if type == Pickup.Type.LASER:
+		data = Pickup.VERTICAL if rng.randf() < 0.5 else Pickup.HORIZONTAL
+	return Pickup.new(type, col, 0, data)
+
+
+## Puts the Warden guard (2 wide) on the curve's row, clearing room for it.
+func _add_warden(rows: Array[Dictionary], columns: int) -> void:
+	var row: Dictionary = rows[clampi(curve.warden_row, 0, rows.size() - 1)]
+	var col := rng.randi_range(0, columns - 2)
+	var level_hp := curve.hp_at(_level, 0)
+	for brick: Brick in row["bricks"].duplicate():
+		if brick.col >= col - brick.width + 1 and brick.col <= col + 1:
+			row["bricks"].erase(brick)
+	for pickup: Pickup in row["pickups"].duplicate():
+		if pickup.col == col or pickup.col == col + 1:
+			row["pickups"].erase(pickup)
+	var guard := Brick.new(Brick.Type.GUARD, maxi(1, int(level_hp * curve.warden_hp)), col, 0, 2)
+	guard.minion_hp = maxi(1, int(level_hp * curve.warden_minion_hp))
+	row["bricks"].append(guard)
+
+
+## A random gap, removed from the list so nothing else lands there.
+func _take_gap(gaps: Array[int]) -> int:
+	return gaps.pop_at(rng.randi_range(0, gaps.size() - 1))
+
+
+## Picks from [[value, weight], ...] by weight.
+func _pick(pool: Array) -> Variant:
+	var total := 0.0
+	for entry in pool:
+		total += entry[1]
+	var roll := rng.randf() * total
+	for entry in pool:
+		roll -= entry[1]
+		if roll < 0.0:
+			return entry[0]
+	return pool.back()[0]
 
 
 func clone() -> LevelGenerator:

@@ -33,6 +33,7 @@ var _ghost_ball: MeshInstance3D
 var _launcher: Node3D
 var _ball_count: Label3D
 var _danger_material: StandardMaterial3D
+var _backdrop_material: StandardMaterial3D
 var _ball_mesh := SphereMesh.new()
 var _ball_material := _flat_material(Color(0.95, 0.95, 0.9))
 
@@ -50,6 +51,7 @@ var _effects_seen := 0
 @onready var _camera: Camera3D = $Camera3D
 @onready var _board_root: Node3D = $Board
 @onready var _hud: Hud = $HUD
+@onready var _environment: Environment = $WorldEnvironment.environment
 
 
 func _ready() -> void:
@@ -83,6 +85,8 @@ func start_run(level: int) -> void:
 	_build_room()
 	_frame_camera()
 	_sync(true)
+	_tint_world(-1.0)
+	_hud.show_banner(game.generator.curve.world_name(game.level) + "\n" + Hud.level_title(game))
 
 
 ## Pays for a start at `level` (level 1 is free) and begins the run.
@@ -123,8 +127,13 @@ func _process(delta: float) -> void:
 	_hud.refresh(game, progress.coins + game.coins_earned() - _banked, best, can_recall, _speed)
 
 	if game.level > _shown_level:
+		var new_world := game.generator.curve.world_index(game.level) != game.generator.curve.world_index(_shown_level)
 		_shown_level = game.level
-		_hud.show_banner("Level %d" % game.level)
+		var title := Hud.level_title(game)
+		if new_world:
+			title = game.generator.curve.world_name(game.level) + "\n" + title
+		_hud.show_banner(title)
+	_tint_world(delta)
 
 	if game.phase == TurnController.Phase.LOST and not _result_shown:
 		_result_shown = true
@@ -377,12 +386,23 @@ func _make_level_marker(level: int) -> Node3D:
 
 # --- Scene building ---------------------------------------------------------
 
+## Eases the backdrop and sky towards the current world's greybox tint.
+## A negative delta snaps straight to it.
+func _tint_world(delta: float) -> void:
+	var tint := game.generator.curve.world_tint(game.level)
+	var blend := 1.0 if delta < 0.0 else 1.0 - exp(-3.0 * delta)
+	_backdrop_material.albedo_color = _backdrop_material.albedo_color.lerp(tint, blend)
+	var sky := tint.darkened(0.6)
+	_environment.background_color = _environment.background_color.lerp(sky, blend)
+
+
 func _build_room() -> void:
 	var columns := float(game.board.columns)
 	var rows := float(game.board.rows)
 	var wall := _flat_material(Color(0.32, 0.34, 0.33))
 
-	_add_box(Vector3(columns, rows + 1.0, 0.1), Vector3(0.0, -rows / 2.0 + 0.5, -0.6), _flat_material(Color(0.12, 0.13, 0.13)))
+	_backdrop_material = _flat_material(Color(0.12, 0.13, 0.13))
+	_add_box(Vector3(columns, rows + 1.0, 0.1), Vector3(0.0, -rows / 2.0 + 0.5, -0.6), _backdrop_material)
 	_add_box(Vector3(0.2, rows + 1.2, 1.0), Vector3(-columns / 2.0 - 0.1, -rows / 2.0 + 0.6, 0.0), wall)
 	_add_box(Vector3(0.2, rows + 1.2, 1.0), Vector3(columns / 2.0 + 0.1, -rows / 2.0 + 0.6, 0.0), wall)
 	_add_box(Vector3(columns + 0.4, 0.2, 1.0), Vector3(0.0, -rows - 0.1, 0.0), wall)

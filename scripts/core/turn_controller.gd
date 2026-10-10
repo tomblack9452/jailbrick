@@ -79,6 +79,7 @@ static func create(seed: int, p_level := 1, curve: DepthCurve = null) -> TurnCon
 	game._next_chunk_row = START_ROW
 	game._next_chunk_level = p_level
 	game._fill_chunks()
+	game.rise_rate = curve.rise_at(p_level)
 	return game
 
 
@@ -220,6 +221,8 @@ func _end_volley() -> void:
 		levels_cleared += 1
 		points += Economy.level_bonus(level)
 		level += 1
+		if generator and generator.curve:
+			rise_rate = generator.curve.rise_at(level)
 		# Scroll the next level's top back to the start row.
 		_shift(START_ROW - level_line_row)
 		level_line_row = START_ROW + LEVEL_ROWS
@@ -293,9 +296,11 @@ func _fill_chunks() -> void:
 		var chunk := generator.generate_level(_next_chunk_level, board.columns)
 		for i in chunk.size():
 			var row := _next_chunk_row + i
-			for entry in chunk[i]["bricks"]:
-				board.add_brick(Brick.new(Brick.Type.STONE, entry[1], entry[0], row))
-			if chunk[i]["pickup"] >= 0:
-				board.add_pickup(Pickup.new(Pickup.Type.EXTRA_BALL, chunk[i]["pickup"], row))
+			for brick: Brick in chunk[i]["bricks"]:
+				brick.row = row
+				board.add_brick(brick)
+			for pickup: Pickup in chunk[i]["pickups"]:
+				pickup.row = row
+				board.add_pickup(pickup)
 		_next_chunk_row += LEVEL_ROWS
 		_next_chunk_level += 1

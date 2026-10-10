@@ -15,6 +15,7 @@ var fast_forward_held := false
 
 var _banner_left := 0.0
 
+@onready var _world: Label = $TopBar/Run/World
 @onready var _level: Label = $TopBar/Run/Level
 @onready var _progress: ProgressBar = $TopBar/Run/Progress
 @onready var _rows: Label = $TopBar/Run/Rows
@@ -46,6 +47,11 @@ func _ready() -> void:
 
 func refresh(game: TurnController, coins: int, best_level: int, can_recall: bool, speed: int) -> void:
 	var cleared := game.rows_cleared()
+	var curve := game.generator.curve if game.generator else null
+	_world.visible = curve != null and curve.world_name(game.level) != ""
+	if _world.visible:
+		_world.text = curve.world_name(game.level).to_upper()
+		_world.modulate = world_label_color(curve.world_tint(game.level))
 	_level.text = "Level %d" % game.level
 	_progress.max_value = TurnController.LEVEL_ROWS
 	_progress.value = cleared
@@ -65,6 +71,21 @@ func refresh(game: TurnController, coins: int, best_level: int, can_recall: bool
 	_fast_forward.text = ">> x%d" % speed if speed > 1 else ">>"
 	if not in_volley:
 		fast_forward_held = false
+
+
+## The world tint is a dark backdrop colour; lift it so the name stays readable.
+static func world_label_color(tint: Color) -> Color:
+	return tint.lightened(0.6)
+
+
+## "Level 8: Flood", "Level 10: Warden", or just "Level 9".
+static func level_title(game: TurnController) -> String:
+	var title := "Level %d" % game.level
+	if game.generator and game.generator.curve:
+		var twist := game.generator.curve.twist_at(game.level)
+		if twist != "":
+			title += ": " + twist.capitalize()
+	return title
 
 
 func show_banner(text: String) -> void:

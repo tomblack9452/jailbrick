@@ -72,20 +72,38 @@ func test_generator_uses_the_curve_for_each_level() -> void:
 		for i in rows.size():
 			var gaps: int = Board.COLUMNS - rows[i]["bricks"].size()
 			assert_gte(gaps, curve.min_gaps_at(level))
-			for entry in rows[i]["bricks"]:
-				assert_true(entry[1] == curve.hp_at(level, i) or entry[1] == curve.hp_at(level, i) * 2)
+			for brick: Brick in rows[i]["bricks"]:
+				if brick.type == Brick.Type.STONE:
+					assert_true(brick.hp == curve.hp_at(level, i) or brick.hp == curve.hp_at(level, i) * 2)
 
 
 func test_runs_use_the_default_curve() -> void:
 	var game := TurnController.create(1, 3)
 	assert_eq(game.generator.curve, curve)
-	assert_eq(game.board.bricks[0].hp % curve.hp_at(3, 0), 0)
+	var stone: Brick
+	for brick in game.board.bricks:
+		if brick.type == Brick.Type.STONE:
+			stone = brick
+			break
+	assert_eq(stone.hp % curve.hp_at(3, 0), 0)
 
 
 func test_generator_clone_keeps_the_curve() -> void:
 	var generator := LevelGenerator.new(9, curve)
 	var copy := generator.clone()
-	assert_eq(generator.generate_level(2, Board.COLUMNS), copy.generate_level(2, Board.COLUMNS))
+	assert_eq(_describe(generator.generate_level(2, Board.COLUMNS)), _describe(copy.generate_level(2, Board.COLUMNS)))
+
+
+## Generated rows as text, so two levels can be compared.
+static func _describe(rows: Array[Dictionary]) -> String:
+	var parts := PackedStringArray()
+	for row in rows:
+		for brick: Brick in row["bricks"]:
+			parts.append("b%d,%d,%d,%d,%d" % [brick.col, brick.type, brick.hp, brick.width, brick.drop])
+		for pickup: Pickup in row["pickups"]:
+			parts.append("p%d,%d,%d" % [pickup.col, pickup.type, pickup.data])
+		parts.append("|")
+	return " ".join(parts)
 
 
 func test_targets_are_valid_bands() -> void:

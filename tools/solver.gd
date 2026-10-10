@@ -381,13 +381,15 @@ func _report(results: Array, seconds: float) -> Dictionary:
 
 	lines.append("## Curve")
 	lines.append("")
-	lines.append("| Level | Pressure | First-row HP | Fill | Keep | Min gaps | Max run | Double HP | +1 Ball |")
-	lines.append("|---|---|---|---|---|---|---|---|---|")
-	for level in range(1, 16):
-		lines.append("| %d | %.2f | %d | %.2f | %.2f | %d | %d | %.2f | %.2f |" % [level, curve.pressure(level),
-			curve.hp_at(level, 0), curve.fill_chance_at(level), curve.keep_chance_at(level),
-			curve.min_gaps_at(level), curve.max_run_at(level), curve.double_chance_at(level),
-			curve.pickup_chance_at(level)])
+	lines.append("| Level | World | Twist | Pressure | First-row HP | Fill | Keep | Min gaps | Max run | Double HP | +1 Ball | Special brick | Special pickup |")
+	lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+	for level in range(1, 21):
+		lines.append("| %d | %s | %s | %.2f | %d | %.2f | %.2f | %d | %d | %.2f | %.2f | %.2f | %.2f |" % [level,
+			curve.world_name(level), curve.twist_at(level).capitalize() if curve.twist_at(level) != "" else "-",
+			curve.pressure(level), curve.hp_at(level, 0) * curve.twist_hp_at(level), curve.fill_chance_at(level),
+			curve.keep_chance_at(level), curve.min_gaps_at(level), curve.max_run_at(level),
+			curve.double_chance_at(level), curve.pickup_chance_at(level), curve.special_chance_at(level),
+			curve.special_pickup_chance_at(level)])
 	lines.append("")
 
 	lines.append("## Runs")
