@@ -71,7 +71,8 @@ the way and can bribe your way back down.
   last and pressure building from level 3. `tools/solver.gd` checks it. A gauge down the left side numbers each level's bottom line,
   and the HUD shows rows cleared out of 10.
 - **Points and coins:** 1 point per HP of damage, plus a bonus per level cleared.
-  Coins = points / 20 + 10 per level cleared, banked when the run ends.
+  Coins = points / 20 + 10 per level cleared + coin pickups (B5), banked when
+  the run ends.
 - **Turn counter:** the HUD always shows "trapped in N" so the pressure is readable.
 - **Fast-forward:** hold to speed up the volley (×2, ×4). Add a recall button after 3 seconds.
 

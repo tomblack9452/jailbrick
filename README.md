@@ -1,12 +1,14 @@
 # Jailbrick
 
 A turn-based brick-breaker escape game with a low-poly PSX look, built in Godot 4.
-Break the lock before the walls close in.
+Dig as deep as you can before the walls close in.
 
 - [`CLAUDE.md`](./CLAUDE.md): project context (pitch, pillars, tech, art recipe)
 - [`BUILD-PROMPTS.md`](./BUILD-PROMPTS.md): full game design and the phase-by-phase build prompts
 
-**Status:** Phase 1 done: a greybox depth-level dig (10-row levels, coins, restart at any level reached). Next step is Phase 2 (depth curve and solver bot).
+**Status:** Phase 3 done: every non-parked brick and pickup, band twists (Flood,
+Nest, Cache, Warden boss) and 10-level worlds, all in greybox and driven by
+`levels/depth_curve.tres`. Next step is Phase 4 (progression and saves).
 
 ## Getting started
 
@@ -31,7 +33,7 @@ godot --path .
 On desktop the window opens at 540×960 (half size). The game itself is laid out
 at 1080×1920 portrait and stretches to fit.
 
-**Controls (Phase 1 greybox):** hold the left mouse button below the hatch to aim,
+**Controls (greybox):** hold the left mouse button below the hatch to aim,
 release to fire. Right-click cancels the aim. Hold **Space** (or the `>>` button)
 to fast-forward, **Q** recalls the volley after 3 seconds, and **R** restarts from
 level 1. Coins and your best level save to `user://progress.json`; delete it to reset.
