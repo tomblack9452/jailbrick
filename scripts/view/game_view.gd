@@ -267,7 +267,7 @@ func _sync(instant: bool) -> void:
 		if view == null:
 			view = PickupView.new()
 			_board_root.add_child(view)
-			view.setup(target + from)
+			view.setup(pickup, target + from)
 			_pickup_views[pickup.id] = view
 		view.target = target
 	for id in _pickup_views.keys():

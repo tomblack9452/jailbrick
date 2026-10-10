@@ -18,6 +18,10 @@ const RADIUS := 0.16
 const PICKUP_RADIUS := 0.3
 ## Speed multiplier while a ball's centre is in a sludge cell.
 const SLUDGE_SLOW := 0.5
+## cos and sin of the 20 degree turn a splitter gives its two extra balls.
+## Written out so the split uses only * and +, which stay exact everywhere.
+const SPLIT_COS := 0.9396926207859084
+const SPLIT_SIN := 0.3420201433256687
 const LAUNCH_INTERVAL_TICKS := 6
 ## Smallest |dy| after a bounce. Stops balls skimming sideways forever.
 const MIN_DY := 0.12
@@ -47,6 +51,14 @@ var first_return_x := 0.0
 var balls_gained := 0
 var hits := 0
 var damage_dealt := 0
+var coins_gained := 0
+var freezes_gained := 0
+## How many of the first balls launched split into 3 straight away (splitters
+## that rose into the danger row last turn).
+var launch_splits := 0
+
+## Balls split off this tick. They join `balls` at the end of the tick.
+var _spawned: Array[Ball] = []
 
 ## Reused by _move() so the hot loop doesn't allocate.
 var _touched: Array[Brick] = []
@@ -103,8 +115,11 @@ func step() -> void:
 	if is_finished():
 		return
 	if to_launch > 0 and tick % LAUNCH_INTERVAL_TICKS == 0:
-		add_ball(launch_x, 0.0, aim_dx, aim_dy)
+		var launched := add_ball(launch_x, 0.0, aim_dx, aim_dy)
 		to_launch -= 1
+		if launch_splits > 0:
+			launch_splits -= 1
+			_split(launched)
 	for ball in balls:
 		if not ball.active:
 			continue
@@ -112,6 +127,8 @@ func step() -> void:
 			_move(ball, false)
 			if not ball.active:
 				break
+	balls.append_array(_spawned)
+	_spawned.clear()
 	tick += 1
 	if tick >= MAX_TICKS:
 		recall()
@@ -261,8 +278,30 @@ func _collect_pickups(ball: Ball) -> void:
 	var dy := ball.y - (pickup.row + 0.5)
 	if dx * dx + dy * dy < reach * reach:
 		board.remove_pickup(pickup)
-		if pickup.type == Pickup.Type.EXTRA_BALL:
-			balls_gained += 1
+		match pickup.type:
+			Pickup.Type.EXTRA_BALL:
+				balls_gained += 1
+			Pickup.Type.COIN:
+				coins_gained += Pickup.COIN_VALUE
+			Pickup.Type.FREEZE:
+				freezes_gained += 1
+			Pickup.Type.SPLITTER:
+				_split(ball)
+			Pickup.Type.LASER:
+				damage_dealt += board.fire_laser(pickup.col, pickup.row, pickup.data == Pickup.VERTICAL, damage)
+
+
+## Adds two extra balls at `ball`, turned 20 degrees either side of it.
+## They last this volley only: balls_gained doesn't count them.
+func _split(ball: Ball) -> void:
+	for side in [1.0, -1.0]:
+		var extra := Ball.new()
+		extra.x = ball.x
+		extra.y = ball.y
+		extra.dx = ball.dx * SPLIT_COS - ball.dy * SPLIT_SIN * side
+		extra.dy = ball.dx * SPLIT_SIN * side + ball.dy * SPLIT_COS
+		_keep_vertical(extra)
+		_spawned.append(extra)
 
 
 ## Traces the aim guide: where a ball fired this way goes, up to `bounces`

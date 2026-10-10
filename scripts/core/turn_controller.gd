@@ -47,6 +47,12 @@ var just_cleared := false
 ## For bricks that act each turn (nests, the Warden). Separate from the
 ## generator's so play never changes what the dig looks like.
 var rng := RandomNumberGenerator.new()
+## Coins from coin pickups this run, on top of the points-based coins.
+var pickup_coins := 0
+## Rise steps still to skip (freeze pickups).
+var freezes := 0
+## Splitters that rose into the danger row: the next volley's first balls split.
+var pending_splits := 0
 
 var _next_chunk_row := 0
 var _next_chunk_level := 1
@@ -99,6 +105,8 @@ func fire(dx: float, dy: float) -> bool:
 		return false
 	board.effects.clear()
 	volley = BallSim.new(board, launch_x, aim[0], aim[1], ball_count, damage)
+	volley.launch_splits = pending_splits
+	pending_splits = 0
 	phase = Phase.VOLLEY
 	return true
 
@@ -139,9 +147,10 @@ func continue_run() -> bool:
 	return true
 
 
-## How many more rises until a brick reaches the danger row.
+## How many more turns until a brick reaches the danger row, counting the
+## rises that freezes will skip.
 func rows_until_trapped() -> int:
-	return ceili(float(board.topmost_brick_row() - Board.DANGER_ROW) / rise_rate)
+	return ceili(float(board.topmost_brick_row() - Board.DANGER_ROW) / rise_rate) + freezes
 
 
 ## How many of the current level's rows are clear, counting from its top.
@@ -155,7 +164,7 @@ func rows_cleared() -> int:
 
 
 func coins_earned() -> int:
-	return Economy.coins_for(points, levels_cleared)
+	return Economy.coins_for(points, levels_cleared) + pickup_coins
 
 
 func clone() -> TurnController:
@@ -176,6 +185,9 @@ func clone() -> TurnController:
 	copy._next_chunk_row = _next_chunk_row
 	copy._next_chunk_level = _next_chunk_level
 	copy.rng.state = rng.state
+	copy.pickup_coins = pickup_coins
+	copy.freezes = freezes
+	copy.pending_splits = pending_splits
 	return copy
 
 
@@ -184,7 +196,8 @@ func snapshot() -> String:
 	var parts: PackedStringArray = [
 		"turn=%d" % turn, "phase=%d" % phase, "balls=%d" % ball_count,
 		"level=%d" % level, "line=%d" % level_line_row, "points=%d" % points,
-		"launch_x=%s" % var_to_str(launch_x),
+		"launch_x=%s" % var_to_str(launch_x), "coins=%d" % pickup_coins,
+		"freezes=%d" % freezes, "splits=%d" % pending_splits,
 	]
 	for brick in board.bricks:
 		parts.append("b%d:%d,%d,%d,%d" % [brick.id, brick.type, brick.col, brick.row, brick.hp])
@@ -198,6 +211,8 @@ func snapshot() -> String:
 func _end_volley() -> void:
 	ball_count += volley.balls_gained
 	points += volley.damage_dealt
+	pickup_coins += volley.coins_gained
+	freezes += volley.freezes_gained
 	launch_x = volley.first_return_x
 	volley = null
 	just_cleared = board.bricks_above(level_line_row) == 0
@@ -208,6 +223,8 @@ func _end_volley() -> void:
 		# Scroll the next level's top back to the start row.
 		_shift(START_ROW - level_line_row)
 		level_line_row = START_ROW + LEVEL_ROWS
+	elif freezes > 0:
+		freezes -= 1
 	else:
 		for i in rise_rate:
 			_shift(-1)
@@ -245,10 +262,27 @@ func _spawn_next_to(brick: Brick, hp: int) -> void:
 
 
 func _shift(delta: int) -> void:
-	ball_count += board.shift(delta).size()
+	var collected := board.shift(delta)
 	level_line_row += delta
 	_next_chunk_row += delta
 	_fill_chunks()
+	for pickup in collected:
+		_auto_collect(pickup)
+
+
+## A pickup that rose into the danger row still counts (B5).
+func _auto_collect(pickup: Pickup) -> void:
+	match pickup.type:
+		Pickup.Type.EXTRA_BALL:
+			ball_count += 1
+		Pickup.Type.COIN:
+			pickup_coins += Pickup.COIN_VALUE
+		Pickup.Type.FREEZE:
+			freezes += 1
+		Pickup.Type.SPLITTER:
+			pending_splits += 1
+		Pickup.Type.LASER:
+			points += board.fire_laser(pickup.col, pickup.row, pickup.data == Pickup.VERTICAL, damage)
 
 
 ## Keeps one level generated below the floor so rises always have bricks to reveal.

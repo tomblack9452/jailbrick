@@ -122,6 +122,21 @@ func damage_brick(brick: Brick, amount: int) -> int:
 	return dealt
 
 
+## Fires a laser bar's beam along its row or column: `amount` damage to every
+## visible brick in the line, each hit once. Returns HP taken.
+func fire_laser(col: int, row: int, vertical: bool, amount: int) -> int:
+	effects.append({"kind": "laser", "col": col, "row": row, "vertical": vertical})
+	var targets: Array[Brick] = []
+	for i in (rows if vertical else columns):
+		var brick := brick_at(col, i) if vertical else brick_at(i, row)
+		if brick != null and not targets.has(brick):
+			targets.append(brick)
+	var dealt := 0
+	for brick in targets:
+		dealt += damage_brick(brick, amount)
+	return dealt
+
+
 ## Every solid brick in a visible cell touching `brick` (its 8 neighbours, or
 ## more for a wide brick), each listed once.
 func neighbours_of(brick: Brick) -> Array[Brick]:
@@ -259,9 +274,7 @@ func _fill_sludge(puddle: Brick, value: Brick) -> void:
 func _break(brick: Brick) -> void:
 	remove_brick(brick)
 	if brick.type == Brick.Type.CRATE and brick.drop >= 0 and is_free(brick.col, brick.row):
-		var pickup := Pickup.new(brick.drop, brick.col, brick.row)
-		pickup.data = brick.drop_data
-		add_pickup(pickup)
+		add_pickup(Pickup.new(brick.drop, brick.col, brick.row, brick.drop_data))
 
 
 func _fill_pickup(pickup: Pickup, value: Pickup) -> void:

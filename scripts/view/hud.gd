@@ -54,6 +54,8 @@ func refresh(game: TurnController, coins: int, best_level: int, can_recall: bool
 	_best.text = "Best: level %d" % best_level
 	var rows := game.rows_until_trapped()
 	_trapped.text = "Trapped in %d" % rows
+	if game.freezes > 0:
+		_trapped.text += " (%d frozen)" % game.freezes
 	_trapped.modulate = DANGER_COLOR if rows <= 2 else Color(0.8, 0.82, 0.8)
 
 	var in_volley := game.phase == TurnController.Phase.VOLLEY
